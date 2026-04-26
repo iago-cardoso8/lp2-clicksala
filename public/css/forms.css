@@ -1,0 +1,15 @@
+.form-box {
+  background: white;
+  padding: 30px;
+  border: 1px solid var(--border-color);
+  max-width: 800px;
+  border-radius: 5px;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
