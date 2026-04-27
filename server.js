@@ -30,20 +30,43 @@ app.get('/solicitacoes/:id', (req, res) => {
 });
 
 app.post('/solicitacoes', (req, res) => {
-  const { sala, data, hora, finalidade } = req.body;
-  if (!sala || !data || !hora) {
-    return res.status(400).json({ error: 'Os campos sala, data e hora são obrigatórios.' });
+  try {
+    const { sala, data, hora, finalidade } = req.body;
+    if (!sala || !data || !hora) {
+      return res.status(400).json({
+        error: 'Os campos sala, data e hora são obrigatórios.'
+      });
+    }
+    const conflito = solicitacoes.some(s =>
+      s.sala === sala &&
+      s.data === data &&
+      s.hora === hora &&
+      s.status === 'Pendente'
+    );
+
+    if (conflito) {
+      return res.status(409).json({
+        error: 'Já existe uma solicitação para essa sala neste dia e horário.'
+      });
+    }
+    const novaSolicitacao = {
+      id: uuidv4(),
+      sala,
+      data,
+      hora,
+      finalidade: finalidade || '',
+      status: 'Pendente',
+    };
+
+    solicitacoes.push(novaSolicitacao);
+
+    return res.status(201).json(novaSolicitacao);
+
+  } catch (erro) {
+    return res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
   }
-  const novaSolicitacao = {
-    id: uuidv4(),
-    sala,
-    data,
-    hora,
-    finalidade: finalidade || '',
-    status: 'Pendente',
-  };
-  solicitacoes.push(novaSolicitacao);
-  return res.status(201).json(novaSolicitacao);
 });
 
 app.put('/solicitacoes/:id', (req, res) => {
