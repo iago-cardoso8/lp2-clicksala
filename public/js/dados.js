@@ -1,14 +1,14 @@
 export const listaSalas = [
-  { nome: "SALA 1", bloco: "UA1", capacidade: 40, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
-  { nome: "SALA 2", bloco: "UA1", capacidade: 40, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
-  { nome: "SALA 22", bloco: "UA1", capacidade: 20, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
-  { nome: "LAB INFO 9", bloco: "UA2", capacidade: 20, tipo: "Laboratório", equipamento: ["Projetor", "lousa", "computadores"] },
-  { nome: "SALA 102", bloco: "UAG ", capacidade: 35, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
-  { nome: "LAB INFO 1", bloco: "UA2", capacidade: 25, tipo: "Laboratório", equipamento: ["Projetor", "lousa", "computadores"] },
-  { nome: "Auditório UAG", bloco: "UAG", capacidade: 30, tipo: "Auditório", equipamento: ["Projetor", "lousa", "microfone"] },
-  { nome: "SALA 4", bloco: "UA1", capacidade: 40, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
-  { nome: "SALA 5", bloco: "UA1", capacidade: 20, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
-  { nome: "SALA 6", bloco: "UA1", capacidade: 60, tipo: "Auditório", equipamento: ["Projetor", "lousa", "microfone"] },
+  { id: 1, nome: "SALA 1", bloco: "UA1", capacidade: 40, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
+  { id: 2, nome: "SALA 2", bloco: "UA1", capacidade: 40, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
+  { id: 3, nome: "SALA 22", bloco: "UA1", capacidade: 20, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
+  { id: 4, nome: "LAB INFO 9", bloco: "UA2", capacidade: 20, tipo: "Laboratório", equipamento: ["Projetor", "lousa", "computadores"] },
+  { id: 5, nome: "SALA 102", bloco: "UAG ", capacidade: 35, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
+  { id: 6, nome: "LAB INFO 1", bloco: "UA2", capacidade: 25, tipo: "Laboratório", equipamento: ["Projetor", "lousa", "computadores"] },
+  { id: 7, nome: "Auditório UAG", bloco: "UAG", capacidade: 30, tipo: "Auditório", equipamento: ["Projetor", "lousa", "microfone"] },
+  { id: 8, nome: "SALA 4", bloco: "UA1", capacidade: 40, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
+  { id: 9, nome: "SALA 5", bloco: "UA1", capacidade: 20, tipo: "Comum", equipamento: ["Projetor", "lousa"] },
+  { id: 10, nome: "SALA 6", bloco: "UA1", capacidade: 60, tipo: "Auditório", equipamento: ["Projetor", "lousa", "microfone"] },
 ];
 
 

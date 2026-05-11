@@ -185,6 +185,8 @@ export function atualizarListaMinhasSalas(lista) {
   lista.forEach((item) => {
     const tr = document.createElement("tr");
 
+    const sala = listaSalas.find(s => s.id === item.cod_sala);
+    const nomeSala = sala ? `${sala.nome} - ${sala.bloco}` : `Sala ${item.cod_sala}`;
 
     let statusClass =
       item.status === "Pendente"
@@ -194,7 +196,7 @@ export function atualizarListaMinhasSalas(lista) {
 
 
     if (item.status === "Pendente") {
-      actionButton = `<button class="btn-lixeira" data-id="${item.id}" title="Cancelar Solicitação"><i class="fas fa-trash"></i></button>`;
+      actionButton = `<button class="btn-lixeira" data-cod-sala="${item.cod_sala}" data-data="${item.data}" data-hora="${item.hora}" title="Cancelar Solicitação"><i class="fas fa-trash"></i></button>`;
 
 
     } else {
@@ -203,7 +205,7 @@ export function atualizarListaMinhasSalas(lista) {
 
 
     tr.innerHTML = `
-               <td>${item.sala}</td>
+               <td>${nomeSala}</td>
                <td>${item.data}</td>
                <td>${item.hora}</td>
                <td><span class="status-badge ${statusClass}">${item.status}</span></td>
@@ -214,12 +216,12 @@ export function atualizarListaMinhasSalas(lista) {
 }
 
 
-async function cancelarAgendamento(id) {
+async function cancelarAgendamento(cod_sala, data, hora) {
   if (!confirm("Cancelar solicitação?")) return;
 
 
   try {
-    const res = await fetch(`${BASE_URL}/${id}`, {
+    const res = await fetch(`${BASE_URL}/${cod_sala}/${data}/${hora}`, {
       method: "DELETE"
     });
 
@@ -254,9 +256,7 @@ function preencherHorarios() {
     const campoData = document.getElementById("campo-data");
     const dataISO = campoData.value;
 
-    // BLOQUEIA DOMINGO
     if (dataISO) {
-        // Pega o dia da semana em português
         const diasSemana = ["DOMINGO", "SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA", "SÁBADO"];
         const diaSemana = diasSemana[new Date(dataISO + "T00:00:00").getDay()];
         
@@ -345,7 +345,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btn) return;
 
 
-    const id = btn.dataset.id; cancelarAgendamento(id);
+    const codSala = btn.dataset.codSala;
+    const data = btn.dataset.data;
+    const hora = btn.dataset.hora;
+    cancelarAgendamento(codSala, data, hora);
   });
 });
 
@@ -355,17 +358,22 @@ document.getElementById("form-solicitacao")
     e.preventDefault();
 
 
-    const sala = document.getElementById("campo-sala").value;
+    const salaNome = document.getElementById("campo-sala").value;
     const dataISO = document.getElementById("campo-data").value;
     const hora = document.getElementById("campo-hora").value;
     const finalidade = document.getElementById("campo-finalidade").value;
 
 
-    if (!sala || !dataISO || !hora) {
+    if (!salaNome || !dataISO || !hora) {
       alert("Preencha todos os campos obrigatórios.");
       return;
     }
 
+    const sala = listaSalas.find(s => `${s.nome} - ${s.bloco}` === salaNome);
+    if (!sala) {
+      alert("Sala não encontrada!");
+      return;
+    }
 
     const dataFormatada = formatarData(dataISO);
 
@@ -398,7 +406,7 @@ document.getElementById("form-solicitacao")
 
       const conflitoBase = horariosBaseOcupados.some(
         (reserva) =>
-          reserva.sala === sala &&
+          reserva.sala === salaNome &&
           reserva.diaSemana === diaDaSemana &&
           reserva.hora === hora
       );
@@ -416,7 +424,7 @@ document.getElementById("form-solicitacao")
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          sala,
+          cod_sala: sala.id,
           data: dataFormatada,
           hora,
           finalidade,

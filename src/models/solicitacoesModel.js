@@ -1,17 +1,15 @@
-import cuid from 'cuid';
 import { solicitacoes } from '../data/solicitacoes.js';
 
-function create({ id, sala, data, hora, finalidade, status }) {
+function create({ cod_sala, data, hora, finalidade, status }) {
   const solicitacao = {
-    id: id || cuid(),
-    sala,
+    cod_sala,
     data,
     hora,
     finalidade: finalidade || '',
     status: status || 'Pendente',
   };
 
-  if (sala && data && hora) {
+  if (cod_sala && data && hora) {
     solicitacoes.push(solicitacao);
     return solicitacao;
   }
@@ -29,25 +27,29 @@ function read(field, value) {
   return solicitacoes;
 }
 
-function readById(id) {
-  if (id) {
-    const index = solicitacoes.findIndex((solicitacao) => String(solicitacao.id) === String(id));
+function readByKey(cod_sala, data, hora) {
+  if (cod_sala && data && hora) {
+    const solicitacao = solicitacoes.find(
+      (s) => String(s.cod_sala) === String(cod_sala) && s.data === data && s.hora === hora
+    );
 
-    if (!solicitacoes[index]) {
+    if (!solicitacao) {
       throw new Error('Solicitação não encontrada');
     }
 
-    return solicitacoes[index];
+    return solicitacao;
   }
 
   throw new Error('Unable to find solicitacao');
 }
 
-function update({ id, status }) {
-  if (id && status) {
-    const index = solicitacoes.findIndex((solicitacao) => String(solicitacao.id) === String(id));
+function update({ cod_sala, data, hora, status }) {
+  if (cod_sala && data && hora && status) {
+    const index = solicitacoes.findIndex(
+      (s) => String(s.cod_sala) === String(cod_sala) && s.data === data && s.hora === hora
+    );
 
-    if (!solicitacoes[index]) {
+    if (index === -1) {
       throw new Error('Solicitação não encontrada');
     }
 
@@ -62,9 +64,11 @@ function update({ id, status }) {
   throw new Error('Unable to update solicitacao');
 }
 
-function remove(id) {
-  if (id) {
-    const index = solicitacoes.findIndex((solicitacao) => String(solicitacao.id) === String(id));
+function remove(cod_sala, data, hora) {
+  if (cod_sala && data && hora) {
+    const index = solicitacoes.findIndex(
+      (s) => String(s.cod_sala) === String(cod_sala) && s.data === data && s.hora === hora
+    );
 
     if (index === -1) {
       throw new Error('Solicitação não encontrada');
@@ -77,4 +81,4 @@ function remove(id) {
   throw new Error('Unable to remove solicitacao');
 }
 
-export default { create, read, readById, update, remove };
+export default { create, read, readByKey, update, remove };

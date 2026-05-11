@@ -12,7 +12,9 @@ function up() {
 
   for (const solicitacao of seed.solicitacoes) {
     const exists = solicitacoesModel.read().some(
-      (item) => String(item.id) === String(solicitacao.id)
+      (item) => String(item.cod_sala) === String(solicitacao.cod_sala) && 
+                 item.data === solicitacao.data && 
+                 item.hora === solicitacao.hora
     );
 
     if (!exists) {

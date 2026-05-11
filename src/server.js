@@ -22,9 +22,10 @@ app.get('/solicitacoes', (req, res) => {
   res.json(result);
 });
 
-app.get('/solicitacoes/:id', (req, res) => {
+app.get('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
   try {
-    const solicitacao = solicitacoesModel.readById(req.params.id);
+    const { cod_sala, data, hora } = req.params;
+    const solicitacao = solicitacoesModel.readByKey(cod_sala, data, hora);
     res.json(solicitacao);
   } catch (error) {
     res.status(404).json({ erro: error.message });
@@ -33,15 +34,15 @@ app.get('/solicitacoes/:id', (req, res) => {
 
 app.post('/solicitacoes', (req, res) => {
   try {
-    const { sala, data, hora, finalidade } = req.body;
-    if (!sala || !data || !hora) {
+    const { cod_sala, data, hora, finalidade } = req.body;
+    if (!cod_sala || !data || !hora) {
       return res.status(400).json({
         error: 'Os campos sala, data e hora são obrigatórios.'
       });
     }
 
     const conflito = solicitacoesModel.read().some((s) =>
-      s.sala === sala &&
+      s.cod_sala === cod_sala &&
       s.data === data &&
       s.hora === hora &&
       s.status === 'Pendente'
@@ -53,7 +54,7 @@ app.post('/solicitacoes', (req, res) => {
       });
     }
 
-    const novaSolicitacao = solicitacoesModel.create({ sala, data, hora, finalidade });
+    const novaSolicitacao = solicitacoesModel.create({ cod_sala, data, hora, finalidade });
     return res.status(201).json(novaSolicitacao);
   } catch (erro) {
     return res.status(500).json({
@@ -62,7 +63,7 @@ app.post('/solicitacoes', (req, res) => {
   }
 });
 
-app.put('/solicitacoes/:id', (req, res) => {
+app.put('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
   try {
     const { status } = req.body;
     if (!status) {
@@ -70,7 +71,9 @@ app.put('/solicitacoes/:id', (req, res) => {
     }
 
     const solicitacaoAtualizada = solicitacoesModel.update({
-      id: req.params.id,
+      cod_sala: req.params.cod_sala,
+      data: req.params.data,
+      hora: req.params.hora,
       status,
     });
 
@@ -83,9 +86,9 @@ app.put('/solicitacoes/:id', (req, res) => {
   }
 });
 
-app.delete('/solicitacoes/:id', (req, res) => {
+app.delete('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
   try {
-    solicitacoesModel.remove(req.params.id);
+    solicitacoesModel.remove(req.params.cod_sala, req.params.data, req.params.hora);
     res.status(204).send();
   } catch (error) {
     res.status(404).json({ erro: error.message });
