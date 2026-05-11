@@ -1,0 +1,45 @@
+# Rest Client (VS Code Extension - HTTP Requests)
+@server=http://localhost:3000
+
+
+### Criar solicitação de sala
+
+
+POST {{server}}/solicitacoes
+Content-Type: application/json
+
+
+{
+ "sala": "Sala 101",
+ "data": "2026-05-01",
+ "hora": "14:00",
+ "finalidade": "Reunião de projeto"
+}
+
+
+### Listar todas as solicitações
+
+
+GET {{server}}/solicitacoes
+
+
+### Buscar uma solicitação por ID
+
+
+GET {{server}}/solicitacoes/1
+
+
+### Atualizar status de uma solicitação
+
+
+PUT {{server}}/solicitacoes/1
+Content-Type: application/json
+
+
+{
+ "status": "Cancelado"
+}
+
+
+### Deletar uma solicitação
+DELETE {{server}}/solicitacoes/1

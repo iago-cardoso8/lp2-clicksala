@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Click Sala - Sistema de Reservas</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="./css/geral.css" />
+    <link rel="stylesheet" href="./css/btn.css" />
+    <link rel="stylesheet" href="./css/tables.css" />
+    <link rel="stylesheet" href="./css/forms.css" />
+  </head>
+  <body>
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <i class="fas fa-bars"></i> <span class="text">Menu</span>
+      </div>
+      <a class="menu-item" id= "menu-ver-salas" data-screen="ver-salas">
+        <i class="fas fa-eye"></i> <span class="text">Ver Salas</span>
+      </a>
+      <a class="menu-item" id= "menu-solicitar" data-screen="solicitar">
+        <i class="fas fa-plus-circle"></i> <span class="text">Solicitar</span>
+      </a>
+      <a class="menu-item" id="menu-minhas-salas" data-screen="minhas-salas">
+        <i class="fas fa-calendar-check"></i>
+        <span class="text">Minhas Salas</span>
+      </a>
+    </nav>
+    <main class="main-content" id="main-content">
+      <header class="top-bar">
+        <div class="logo">
+          <img src="./img/logo.png" style="width: 30px; height: 30px;"/>
+          <span class="logo-text">CLICKSala</span>
+        </div>
+        <div class="user-info">
+          <span class="username">Usuario Teste</span>
+          <img src="./img/userclick.png" style="width: 35px; height: 30px;"/>
+          <img src="./img/logout.png" style="width: 35px; height: 30px;"/>
+        </div>
+      </header>
+
+      <div class="screen-container">
+        <section id="ver-salas" class="screen active">
+          <div class="breadcrumb">Usuário > Ver Salas</div>
+          <div style="margin-bottom: 20px">
+            <input
+              type="text"
+              id="input-pesquisa-salas"
+              placeholder="Pesquisar sala por nome, bloco ou tipo..."
+              style="padding: 10px; border: 1px solid #ddd; width: 100%"
+            />
+          </div>
+          <table id="tabela-salas">
+            <thead>
+              <tr>
+                <th>Sala</th>
+                <th>Bloco</th>
+                <th>Capacidade</th>
+                <th>Equipamentos</th>
+                <th>Tipo</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </section>
+
+        <section id="solicitar" class="screen">
+          <div class="breadcrumb">Usuário > Solicitar</div>
+          <div class="form-box">
+            <div class="form-header">SOLICITAR SALA</div>
+            <form id="form-solicitacao">
+              <div class="form-group">
+                <label>Escolher sala: *</label>
+                <select id="campo-sala" required>
+                  <option value="">Selecione...</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Data: *</label
+                  ><input type="date" id="campo-data" required />
+                </div>
+                <div class="form-group">
+                  <label>Horário: *</label
+                  ><select id="campo-hora" required>
+                    <option value="">Selecione a data primeiro...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Finalidade:</label>
+                <textarea
+                  id="campo-finalidade"
+                  maxlength="800"
+                ></textarea>
+                <div style="text-align: right; font-size: 0.8rem; color: #999">
+                  <span id="contador">0</span>/800
+                </div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 10px">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  id="btn-limpar"
+                >
+                  Limpar
+                </button>
+                <button type="submit" class="btn btn-solicitar">
+                  Concluir Solicitação
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="detalhe-sala" class="screen">
+          <div class="breadcrumb">
+            Usuário >
+            <a href="#" class="link-screen" data-screen="ver-salas">Ver Salas</a> >
+            <span id="titulo-detalhe-sala"></span>
+          </div>
+          <div style="background: white; padding: 20px; border: 1px solid #ddd">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <h2 id="sala-exibida" class="titulo-sala"></h2>
+              <button class="btn btn-solicitar" id="btn-solicitar-interno">
+                Ir para Formulário <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="schedule-grid" id="grade-horarios"></div>
+          </div>
+        </section>
+
+        <section id="minhas-salas" class="screen">
+          <div class="breadcrumb">Usuário > Minhas Salas</div>
+          <div
+            style="
+              background: white;
+              padding: 20px;
+              border-radius: 5px;
+              border: 1px solid #ddd;
+            "
+          >
+            <h3 style="margin-bottom: 20px; color: var(--primary-color)">
+              Meus Agendamentos
+            </h3>
+            <table id="tabela-minhas-salas">
+              <thead>
+                <tr>
+                  <th>Sala</th>
+                  <th>Data</th>
+                  <th>Horário</th>
+                  <th>Status</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div
+              id="msg-vazio"
+              style="
+                text-align: center;
+                padding: 20px;
+                color: #777;
+                display: none;
+              "
+            >
+              Nenhuma sala solicitada ainda.
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

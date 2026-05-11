@@ -1,0 +1,20 @@
+{
+  "solicitacoes": [
+    {
+      "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      "sala": "SALA 1",
+      "data": "2026-10-01",
+      "hora": "14:00",
+      "finalidade": "Aula",
+      "status": "Pendente"
+    },
+    {
+      "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+      "sala": "SALA 2",
+      "data": "2026-10-02",
+      "hora": "10:00",
+      "finalidade": "Reunião",
+      "status": "Pendente"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+.btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+.btn-eye {
+  background: #757575;
+  color: white;
+}
+.btn-eye:hover {
+  background: #3C3C3C;
+  color: white;
+}
+.btn-solicitar {
+  background: var(--primary-color);
+  color: white;
+}
+.btn-solicitar:hover {
+  background: #1b5e20;
+}
+.btn-danger {
+  background: var(--danger-color);
+  color: white;
+}
+.btn-danger:hover {
+  background: #b71c1c;
+}
+.btn-lixeira {
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: 1rem;
+}
+.btn-lixeira:hover {
+  color: #b71c1c;
+}
