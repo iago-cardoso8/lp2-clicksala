@@ -1,8 +1,23 @@
 
-import { listaSalas, horariosBaseOcupados, blocosHorarios, diasSemana } from './dados.js'
+import { horariosBaseOcupados, blocosHorarios, diasSemana } from './dados.js'
 
-
+let listaSalas = [];
 const BASE_URL = '/solicitacoes';
+
+export async function carregarSalas() {
+  try {
+    const res = await fetch('/salas');
+    if (!res.ok) {
+      throw new Error('Erro ao buscar salas');
+    }
+
+    listaSalas = await res.json();
+    return listaSalas;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
 
 async function carregarSolicitacoes() {
   try {
@@ -219,24 +234,21 @@ export function atualizarListaMinhasSalas(lista) {
 async function cancelarAgendamento(cod_sala, data, hora) {
   if (!confirm("Cancelar solicitação?")) return;
 
-
   try {
-    const res = await fetch(`${BASE_URL}/${cod_sala}/${data}/${hora}`, {
-      method: "DELETE"
+    const res = await fetch(BASE_URL, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ cod_sala, data, hora })
     });
-
 
     if (!res.ok) {
       throw new Error("Erro ao cancelar solicitação");
     }
 
-
     alert("Solicitação cancelada com sucesso!");
-
-
     carregarSolicitacoes();
-
-
   } catch (erro) {
     console.error(erro);
     alert("Erro ao cancelar solicitação.");

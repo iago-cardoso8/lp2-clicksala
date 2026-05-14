@@ -4,6 +4,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import solicitacoesModel from './models/solicitacoesModel.js';
+import Database from './database/database.js';
+import Migration from './database/migration.js';
 import Seed from './database/seeders.js';
 
 const app = express();
@@ -20,6 +22,24 @@ app.get('/solicitacoes', (req, res) => {
   const { field, value } = req.query;
   const result = solicitacoesModel.read(field, value);
   res.json(result);
+});
+
+app.get('/salas', async (req, res) => {
+  try {
+    const db = await Database.connect();
+    const salas = await db.all(
+      `SELECT id, nome, bloco, capacidade, tipo, equipamento FROM sala ORDER BY id`
+    );
+    db.close();
+    res.json(
+      salas.map((sala) => ({
+        ...sala,
+        equipamento: sala.equipamento ? JSON.parse(sala.equipamento) : [],
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar salas' });
+  }
 });
 
 app.get('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
@@ -86,6 +106,20 @@ app.put('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
   }
 });
 
+app.delete('/solicitacoes', (req, res) => {
+  const { cod_sala, data, hora } = req.body.cod_sala ? req.body : req.query;
+  try {
+    if (!cod_sala || !data || !hora) {
+      return res.status(400).json({ error: 'Parâmetros cod_sala, data e hora são obrigatórios.' });
+    }
+
+    solicitacoesModel.remove(cod_sala, data, hora);
+    res.status(204).send();
+  } catch (error) {
+    res.status(404).json({ erro: error.message });
+  }
+});
+
 app.delete('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
   try {
     solicitacoesModel.remove(req.params.cod_sala, req.params.data, req.params.hora);
@@ -95,6 +129,7 @@ app.delete('/solicitacoes/:cod_sala/:data/:hora', (req, res) => {
   }
 });
 
+await Migration.up();
 await Seed.up();
 
 app.listen(3000, () => {

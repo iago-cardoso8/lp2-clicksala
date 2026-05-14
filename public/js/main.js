@@ -1,8 +1,11 @@
-import { showScreen, carregarTabelaSalas, setMinDateOnForm, atualizarListaMinhasSalas } from './functions.js'
-import { listaSalas } from './dados.js'
+import { showScreen, carregarTabelaSalas, setMinDateOnForm, atualizarListaMinhasSalas, carregarSalas } from './functions.js'
 
+async function init() {
+  const salas = await carregarSalas();
+  carregarTabelaSalas(salas);
+}
 
-carregarTabelaSalas(listaSalas);
+init();
 setMinDateOnForm();
 atualizarListaMinhasSalas([]);
 

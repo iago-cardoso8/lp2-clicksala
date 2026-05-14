@@ -1,84 +1,132 @@
-import { solicitacoes } from '../data/solicitacoes.js';
+import { resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+
+const dbFile = resolve('src', 'database', 'db.sqlite');
+const allowedFields = new Set(['cod_sala', 'data', 'hora', 'finalidade', 'status']);
+
+function connect() {
+  return new DatabaseSync(dbFile);
+}
 
 function create({ cod_sala, data, hora, finalidade, status }) {
-  const solicitacao = {
-    cod_sala,
-    data,
-    hora,
-    finalidade: finalidade || '',
-    status: status || 'Pendente',
-  };
-
-  if (cod_sala && data && hora) {
-    solicitacoes.push(solicitacao);
-    return solicitacao;
+  if (!cod_sala || !data || !hora) {
+    throw new Error('Unable to create solicitacao');
   }
 
-  throw new Error('Unable to create solicitacao');
+  const db = connect();
+  try {
+    const result = db.prepare(
+      `INSERT INTO solicitacao (cod_sala, data, hora, finalidade, status)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run(
+      cod_sala,
+      data,
+      hora,
+      finalidade || '',
+      status || 'Pendente'
+    );
+
+    if (result.changes !== 1) {
+      throw new Error('Unable to create solicitacao');
+    }
+
+    return {
+      cod_sala,
+      data,
+      hora,
+      finalidade: finalidade || '',
+      status: status || 'Pendente',
+    };
+  } finally {
+    db.close();
+  }
 }
 
 function read(field, value) {
-  if (field && value) {
-    return solicitacoes.filter((solicitacao) =>
-      String(solicitacao[field]).includes(value)
-    );
-  }
+  const db = connect();
+  try {
+    if (field && value && allowedFields.has(field)) {
+      return db
+        .prepare(`SELECT cod_sala, data, hora, finalidade, status FROM solicitacao WHERE ${field} LIKE ?`)
+        .all(`%${value}%`);
+    }
 
-  return solicitacoes;
+    return db.prepare(`SELECT cod_sala, data, hora, finalidade, status FROM solicitacao`).all();
+  } finally {
+    db.close();
+  }
 }
 
 function readByKey(cod_sala, data, hora) {
-  if (cod_sala && data && hora) {
-    const solicitacao = solicitacoes.find(
-      (s) => String(s.cod_sala) === String(cod_sala) && s.data === data && s.hora === hora
-    );
+  if (!cod_sala || !data || !hora) {
+    throw new Error('Unable to find solicitacao');
+  }
+
+  const db = connect();
+  try {
+    const solicitacao = db
+      .prepare(
+        `SELECT cod_sala, data, hora, finalidade, status
+         FROM solicitacao
+         WHERE cod_sala = ? AND data = ? AND hora = ?`
+      )
+      .get(cod_sala, data, hora);
 
     if (!solicitacao) {
       throw new Error('Solicitação não encontrada');
     }
 
     return solicitacao;
+  } finally {
+    db.close();
   }
-
-  throw new Error('Unable to find solicitacao');
 }
 
 function update({ cod_sala, data, hora, status }) {
-  if (cod_sala && data && hora && status) {
-    const index = solicitacoes.findIndex(
-      (s) => String(s.cod_sala) === String(cod_sala) && s.data === data && s.hora === hora
-    );
+  if (!cod_sala || !data || !hora || !status) {
+    throw new Error('Unable to update solicitacao');
+  }
 
-    if (index === -1) {
+  const db = connect();
+  try {
+    const result = db
+      .prepare(
+        `UPDATE solicitacao SET status = ?
+         WHERE cod_sala = ? AND data = ? AND hora = ?`
+      )
+      .run(status, cod_sala, data, hora);
+
+    if (result.changes === 0) {
       throw new Error('Solicitação não encontrada');
     }
 
-    solicitacoes[index] = {
-      ...solicitacoes[index],
-      status,
-    };
-
-    return solicitacoes[index];
+    return readByKey(cod_sala, data, hora);
+  } finally {
+    db.close();
   }
-
-  throw new Error('Unable to update solicitacao');
 }
 
 function remove(cod_sala, data, hora) {
-  if (cod_sala && data && hora) {
-    const index = solicitacoes.findIndex(
-      (s) => String(s.cod_sala) === String(cod_sala) && s.data === data && s.hora === hora
-    );
+  if (!cod_sala || !data || !hora) {
+    throw new Error('Unable to remove solicitacao');
+  }
 
-    if (index === -1) {
+  const db = connect();
+  try {
+    const result = db
+      .prepare(
+        `DELETE FROM solicitacao WHERE cod_sala = ? AND data = ? AND hora = ?`
+      )
+      .run(cod_sala, data, hora);
+
+    if (result.changes === 0) {
       throw new Error('Solicitação não encontrada');
     }
 
-    solicitacoes.splice(index, 1);
     return true;
+  } finally {
+    db.close();
   }
-
-  throw new Error('Unable to remove solicitacao');
 }
 
 export default { create, read, readByKey, update, remove };
