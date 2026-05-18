@@ -4,7 +4,6 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import solicitacoesModel from './models/solicitacoesModel.js';
-import Database from './database/database.js';
 import Migration from './database/migration.js';
 import Seed from './database/seeders.js';
 
@@ -26,17 +25,8 @@ app.get('/solicitacoes', (req, res) => {
 
 app.get('/salas', async (req, res) => {
   try {
-    const db = await Database.connect();
-    const salas = await db.all(
-      `SELECT id, nome, bloco, capacidade, tipo, equipamento FROM sala ORDER BY id`
-    );
-    db.close();
-    res.json(
-      salas.map((sala) => ({
-        ...sala,
-        equipamento: sala.equipamento ? JSON.parse(sala.equipamento) : [],
-      }))
-    );
+    const salas = await solicitacoesModel.getSalas();
+    res.json(salas);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar salas' });
   }

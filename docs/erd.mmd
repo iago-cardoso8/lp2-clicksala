@@ -1,0 +1,17 @@
+erDiagram
+    SALA {
+        integer id PK
+        varchar nome
+        varchar bloco
+        varchar tipo
+        integer capacidade
+        jsonb equipamento
+    }
+    SOLICITACAO {
+        integer cod_sala FK
+        date data PK
+        time hora PK
+        varchar finalidade
+        varchar status
+    }
+    SALA ||--o{ SOLICITACAO : "possui"

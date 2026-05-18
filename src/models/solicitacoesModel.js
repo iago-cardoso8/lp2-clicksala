@@ -1,11 +1,28 @@
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import Database from '../database/database.js';
 
 const dbFile = resolve('src', 'database', 'db.sqlite');
 const allowedFields = new Set(['cod_sala', 'data', 'hora', 'finalidade', 'status']);
 
 function connect() {
   return new DatabaseSync(dbFile);
+}
+
+async function getSalas() {
+  const db = await Database.connect();
+  try {
+    const salas = await db.all(
+      `SELECT id, nome, bloco, capacidade, tipo, equipamento FROM sala ORDER BY id`
+    );
+
+    return salas.map((sala) => ({
+      ...sala,
+      equipamento: sala.equipamento ? JSON.parse(sala.equipamento) : [],
+    }));
+  } finally {
+    await db.close();
+  }
 }
 
 function create({ cod_sala, data, hora, finalidade, status }) {
@@ -129,4 +146,4 @@ function remove(cod_sala, data, hora) {
   }
 }
 
-export default { create, read, readByKey, update, remove };
+export default { create, read, readByKey, update, remove, getSalas };
