@@ -32,6 +32,9 @@ async function carregarSolicitacoes() {
   }
 }
 
+export function carregarMinhasSalas() {
+  return carregarSolicitacoes();
+}
 
 export function carregarTabelaSalas(salas) {
   const tbody = document.querySelector("#tabela-salas tbody");
@@ -91,6 +94,7 @@ export function showScreen(screenId) {
   }
   if (screenId === "minhas-salas") {
     document.getElementById("menu-minhas-salas").classList.add("active");
+    carregarSolicitacoes();
   } else if (screenId === "solicitar") {
     document.getElementById("menu-solicitar").classList.add("active");
   }

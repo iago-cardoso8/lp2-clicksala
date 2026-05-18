@@ -1,19 +1,19 @@
-import { showScreen, carregarTabelaSalas, setMinDateOnForm, atualizarListaMinhasSalas, carregarSalas } from './functions.js'
+import { showScreen, carregarTabelaSalas, setMinDateOnForm, atualizarListaMinhasSalas, carregarSalas, carregarMinhasSalas } from './functions.js'
 
 async function init() {
   const salas = await carregarSalas();
   carregarTabelaSalas(salas);
+  await carregarMinhasSalas();
 }
 
 init();
 setMinDateOnForm();
-atualizarListaMinhasSalas([]);
 
 
 document.querySelectorAll(".menu-item").forEach((item) => {
   item.addEventListener("click", () => {
     const screen = item.dataset.screen;
-    showScreen(screen);
+    showScreen(screen)
   });
 });
 
