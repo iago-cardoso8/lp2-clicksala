@@ -32,12 +32,12 @@ GET {{server}}/solicitacoes/1
 ### Atualizar status de uma solicitação
 
 
-PUT {{server}}/solicitacoes/1
+PUT {{server}}/solicitacoes/6/17%2F06%2F2026/08%3A40%20-%2009%3A30
 Content-Type: application/json
 
 
 {
- "status": "Cancelado"
+ "status": "Aprovado"
 }
 
 
