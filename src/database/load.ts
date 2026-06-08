@@ -7,3 +7,5 @@ async function load() {
 }
 
 load();
+
+export default load;

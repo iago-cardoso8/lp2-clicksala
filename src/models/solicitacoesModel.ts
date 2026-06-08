@@ -1,22 +1,27 @@
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import Database from '../database/database.js';
+import type { Sala, Solicitacao, CreateSolicitacaoDTO, UpdateSolicitacaoDTO } from '../types/entities.js';
 
-const dbFile = resolve('src', 'database', 'db.sqlite');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const dbFile = resolve(__dirname, 'db.sqlite');
 const allowedFields = new Set(['cod_sala', 'data', 'hora', 'finalidade', 'status']);
 
 function connect() {
+  // use sync Database for simple operations
   return new DatabaseSync(dbFile);
 }
 
-async function getSalas() {
+async function getSalas(): Promise<Sala[]> {
   const db = await Database.connect();
   try {
     const salas = await db.all(
       `SELECT id, nome, bloco, capacidade, tipo, equipamento FROM sala ORDER BY id`
     );
 
-    return salas.map((sala) => ({
+    return salas.map((sala: any) => ({
       ...sala,
       equipamento: sala.equipamento ? JSON.parse(sala.equipamento) : [],
     }));
@@ -25,7 +30,7 @@ async function getSalas() {
   }
 }
 
-function create({ cod_sala, data, hora, finalidade, status }) {
+function create({ cod_sala, data, hora, finalidade, status }: CreateSolicitacaoDTO): Solicitacao {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to create solicitacao');
   }
@@ -59,7 +64,7 @@ function create({ cod_sala, data, hora, finalidade, status }) {
   }
 }
 
-function read(field, value) {
+function read(field?: string, value?: string): Solicitacao[] {
   const db = connect();
   try {
     if (field && value && allowedFields.has(field)) {
@@ -74,7 +79,7 @@ function read(field, value) {
   }
 }
 
-function readByKey(cod_sala, data, hora) {
+function readByKey(cod_sala: number | string, data: string, hora: string): Solicitacao {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to find solicitacao');
   }
@@ -99,7 +104,7 @@ function readByKey(cod_sala, data, hora) {
   }
 }
 
-function update({ cod_sala, data, hora, status }) {
+function update({ cod_sala, data, hora, status }: UpdateSolicitacaoDTO): Solicitacao {
   if (!cod_sala || !data || !hora || !status) {
     throw new Error('Unable to update solicitacao');
   }
@@ -123,7 +128,7 @@ function update({ cod_sala, data, hora, status }) {
   }
 }
 
-function remove(cod_sala, data, hora) {
+function remove(cod_sala: number | string, data: string, hora: string) {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to remove solicitacao');
   }

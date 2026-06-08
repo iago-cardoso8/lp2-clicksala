@@ -37,8 +37,8 @@ async function up() {
   }
 
   for (const solicitacao of seed.solicitacoes) {
-    const exists = solicitacoesModel.read().some(
-      (item) => String(item.cod_sala) === String(solicitacao.cod_sala) &&
+    const exists = solicitacoesModel.read().some((item: any) =>
+      String(item.cod_sala) === String(solicitacao.cod_sala) &&
                  item.data === solicitacao.data &&
                  item.hora === solicitacao.hora
     );
