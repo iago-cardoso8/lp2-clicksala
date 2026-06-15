@@ -1,0 +1,29 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Sala {
+  id          Int    @id @default(autoincrement())
+  nome        String
+  bloco       String
+  tipo        String
+  capacidade  Int
+  equipamento String
+  solicitacoes Solicitacao[]
+}
+
+model Solicitacao {
+  cod_sala   Int
+  data       String
+  hora       String
+  finalidade String?
+  status     String @default("Pendente")
+  sala       Sala   @relation(fields: [cod_sala], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([cod_sala, data, hora])
+}

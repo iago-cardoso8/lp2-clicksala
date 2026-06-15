@@ -6,7 +6,7 @@ const BASE_URL = '/solicitacoes';
 
 export async function carregarSalas() {
   try {
-    const res = await fetch('/salas');
+    const res = await fetch(`${BASE_URL}/salas`);
     if (!res.ok) {
       throw new Error('Erro ao buscar salas');
     }

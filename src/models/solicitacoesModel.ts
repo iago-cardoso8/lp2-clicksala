@@ -1,154 +1,147 @@
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { DatabaseSync } from 'node:sqlite';
-import Database from '../database/database.js';
+import { prisma } from '../database/prismaClient.js';
+import type { Prisma } from '@prisma/client';
 import type { Sala, Solicitacao, CreateSolicitacaoDTO, UpdateSolicitacaoDTO } from '../types/entities.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const dbFile = resolve(__dirname, 'db.sqlite');
+type PrismaSala = Prisma.SalaGetPayload<{
+  select: {
+    id: true;
+    nome: true;
+    bloco: true;
+    tipo: true;
+    capacidade: true;
+    equipamento: true;
+  };
+}>;
+
+type PrismaSolicitacao = Prisma.SolicitacaoGetPayload<{}>;
+
 const allowedFields = new Set(['cod_sala', 'data', 'hora', 'finalidade', 'status']);
 
-function connect() {
-  // use sync Database for simple operations
-  return new DatabaseSync(dbFile);
+function normalizeSolicitacao(solicitacao: PrismaSolicitacao): Solicitacao {
+  return {
+    ...solicitacao,
+    finalidade: solicitacao.finalidade ?? '',
+  };
 }
 
-async function getSalas(): Promise<Sala[]> {
-  const db = await Database.connect();
-  try {
-    const salas = await db.all(
-      `SELECT id, nome, bloco, capacidade, tipo, equipamento FROM sala ORDER BY id`
-    );
+export async function getSalas(): Promise<Sala[]> {
+  const salas = await prisma.sala.findMany({
+    orderBy: { id: 'asc' },
+    select: {
+      id: true,
+      nome: true,
+      bloco: true,
+      tipo: true,
+      capacidade: true,
+      equipamento: true,
+    },
+  });
 
-    return salas.map((sala: any) => ({
-      ...sala,
-      equipamento: sala.equipamento ? JSON.parse(sala.equipamento) : [],
-    }));
-  } finally {
-    await db.close();
-  }
+  return salas.map((sala: PrismaSala): Sala => ({
+    id: sala.id,
+    nome: sala.nome,
+    bloco: sala.bloco,
+    tipo: sala.tipo,
+    capacidade: sala.capacidade,
+    equipamento: sala.equipamento ? JSON.parse(sala.equipamento) : [],
+  }));
 }
 
-function create({ cod_sala, data, hora, finalidade, status }: CreateSolicitacaoDTO): Solicitacao {
+export async function create({ cod_sala, data, hora, finalidade, status }: CreateSolicitacaoDTO): Promise<Solicitacao> {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to create solicitacao');
   }
 
-  const db = connect();
-  try {
-    const result = db.prepare(
-      `INSERT INTO solicitacao (cod_sala, data, hora, finalidade, status)
-       VALUES (?, ?, ?, ?, ?)`
-    ).run(
-      cod_sala,
-      data,
-      hora,
-      finalidade || '',
-      status || 'Pendente'
-    );
-
-    if (result.changes !== 1) {
-      throw new Error('Unable to create solicitacao');
-    }
-
-    return {
-      cod_sala,
+  const solicitacao = await prisma.solicitacao.create({
+    data: {
+      cod_sala: Number(cod_sala),
       data,
       hora,
       finalidade: finalidade || '',
       status: status || 'Pendente',
-    };
-  } finally {
-    db.close();
-  }
+    },
+  });
+
+  return normalizeSolicitacao(solicitacao);
 }
 
-function read(field?: string, value?: string): Solicitacao[] {
-  const db = connect();
-  try {
-    if (field && value && allowedFields.has(field)) {
-      return db
-        .prepare(`SELECT cod_sala, data, hora, finalidade, status FROM solicitacao WHERE ${field} LIKE ?`)
-        .all(`%${value}%`);
+export async function read(field?: string, value?: string): Promise<Solicitacao[]> {
+  const where: Record<string, any> = {};
+
+  if (field && value && allowedFields.has(field)) {
+    if (field === 'cod_sala') {
+      const codSala = Number(value);
+      where.cod_sala = Number.isNaN(codSala) ? -1 : codSala;
+    } else {
+      where[field] = { contains: value, mode: 'insensitive' };
     }
-
-    return db.prepare(`SELECT cod_sala, data, hora, finalidade, status FROM solicitacao`).all();
-  } finally {
-    db.close();
   }
+
+  const result = await prisma.solicitacao.findMany({
+    where,
+    orderBy: [{ data: 'asc' }, { hora: 'asc' }],
+  });
+
+  return result.map(normalizeSolicitacao);
 }
 
-function readByKey(cod_sala: number | string, data: string, hora: string): Solicitacao {
+export async function readByKey(cod_sala: number | string, data: string, hora: string): Promise<Solicitacao> {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to find solicitacao');
   }
 
-  const db = connect();
-  try {
-    const solicitacao = db
-      .prepare(
-        `SELECT cod_sala, data, hora, finalidade, status
-         FROM solicitacao
-         WHERE cod_sala = ? AND data = ? AND hora = ?`
-      )
-      .get(cod_sala, data, hora);
+  const solicitacao = await prisma.solicitacao.findUnique({
+    where: {
+      cod_sala_data_hora: {
+        cod_sala: Number(cod_sala),
+        data,
+        hora,
+      },
+    },
+  });
 
-    if (!solicitacao) {
-      throw new Error('Solicitação não encontrada');
-    }
-
-    return solicitacao;
-  } finally {
-    db.close();
+  if (!solicitacao) {
+    throw new Error('Solicitação não encontrada');
   }
+
+  return normalizeSolicitacao(solicitacao);
 }
 
-function update({ cod_sala, data, hora, status }: UpdateSolicitacaoDTO): Solicitacao {
+export async function update({ cod_sala, data, hora, status }: UpdateSolicitacaoDTO): Promise<Solicitacao> {
   if (!cod_sala || !data || !hora || !status) {
     throw new Error('Unable to update solicitacao');
   }
 
-  const db = connect();
-  try {
-    const result = db
-      .prepare(
-        `UPDATE solicitacao SET status = ?
-         WHERE cod_sala = ? AND data = ? AND hora = ?`
-      )
-      .run(status, cod_sala, data, hora);
+  const updated = await prisma.solicitacao.update({
+    where: {
+      cod_sala_data_hora: {
+        cod_sala: Number(cod_sala),
+        data,
+        hora,
+      },
+    },
+    data: { status },
+  });
 
-    if (result.changes === 0) {
-      throw new Error('Solicitação não encontrada');
-    }
-
-    return readByKey(cod_sala, data, hora);
-  } finally {
-    db.close();
-  }
+  return normalizeSolicitacao(updated);
 }
 
-function remove(cod_sala: number | string, data: string, hora: string) {
+export async function remove(cod_sala: number | string, data: string, hora: string): Promise<boolean> {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to remove solicitacao');
   }
 
-  const db = connect();
-  try {
-    const result = db
-      .prepare(
-        `DELETE FROM solicitacao WHERE cod_sala = ? AND data = ? AND hora = ?`
-      )
-      .run(cod_sala, data, hora);
+  await prisma.solicitacao.delete({
+    where: {
+      cod_sala_data_hora: {
+        cod_sala: Number(cod_sala),
+        data,
+        hora,
+      },
+    },
+  });
 
-    if (result.changes === 0) {
-      throw new Error('Solicitação não encontrada');
-    }
-
-    return true;
-  } finally {
-    db.close();
-  }
+  return true;
 }
 
-export default { create, read, readByKey, update, remove, getSalas };
+export default { getSalas, create, read, readByKey, update, remove };

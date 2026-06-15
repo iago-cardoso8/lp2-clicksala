@@ -1,24 +1,24 @@
-import Database from './database.js';
+import { prisma } from './prismaClient.js';
 
 async function up() {
-  const db = await Database.connect();
+  await prisma.$connect();
 
-  await db.run(`
+  await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS sala (
       id integer primary key autoincrement,
       nome varchar(40) not null,
       bloco varchar(40) NOT NULL,
       tipo varchar(40) not null,
       capacidade integer not null,
-      equipamento jsonb
+      equipamento json
     )
   `);
 
-  await db.run(`
+  await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS solicitacao (
       cod_sala integer not null,
-      data date NOT NULL,
-      hora time NOT NULL,
+      data TEXT NOT NULL,
+      hora TEXT NOT NULL,
       finalidade varchar(800),
       status varchar(20) not null default 'Pendente',
       foreign key (cod_sala) references sala(id)
