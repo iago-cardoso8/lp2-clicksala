@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
@@ -13,9 +16,15 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(morgan('tiny'));
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || `http://localhost:${PORT}`;
+const LOG_LEVEL = process.env.LOG_LEVEL || 'debug';
+
+app.use(morgan(LOG_LEVEL === 'debug' ? 'dev' : 'tiny'));
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: CORS_ORIGIN }));
 app.use(requireJson);
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -27,8 +36,10 @@ await Seed.up();
 
 app.use(errorHandler as any);
 
-app.listen(3000, () => {
-  console.log(`Servidor rodando em http://localhost:3000`);
+app.listen(PORT, () => {
+  console.log(`✅ Servidor rodando em http://${HOST}:${PORT}`);
+  console.log(`🌍 Ambiente: ${NODE_ENV}`);
+  console.log(`📍 CORS Origin: ${CORS_ORIGIN}`);
 });
 
 export default app;

@@ -5,14 +5,17 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const dbFilePath = resolve(__dirname, '..', 'models', 'db.sqlite');
+
+const dbFilePath = resolve(__dirname, '..', 'database', 'db.sqlite');
 
 if (!existsSync(dbFilePath)) {
-  mkdirSync(resolve(__dirname, '..', 'models'), { recursive: true });
+  mkdirSync(resolve(__dirname, '..', 'database'), { recursive: true });
   writeFileSync(dbFilePath, '');
 }
 
 const databaseUrl = process.env.DATABASE_URL ?? `file:${dbFilePath}`;
+
+console.log(`📦 Banco de dados: ${databaseUrl}`);
 
 export const prisma = new PrismaClient({
   datasources: {
