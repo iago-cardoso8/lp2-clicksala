@@ -1,5 +1,7 @@
 import { prisma } from './prismaClient.js';
 
+// ver como fzr migration por cmd, em vez de arquivo migration
+
 async function up() {
   await prisma.$connect();
 
