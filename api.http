@@ -2,44 +2,33 @@
 @server=http://localhost:3000
 
 
+### Listar salas disponíveis
+GET {{server}}/solicitacoes/salas
+
+### Listar todas as solicitações
+GET {{server}}/solicitacoes
+
 ### Criar solicitação de sala
-
-
 POST {{server}}/solicitacoes
 Content-Type: application/json
 
-
 {
- "sala": "Sala 101",
- "data": "2026-05-01",
- "hora": "14:00",
- "finalidade": "Reunião de projeto"
+  "sala": "SALA 1",
+  "data": "2026-05-01",
+  "hora": "14:00",
+  "finalidade": "Reunião de projeto"
 }
 
-
-### Listar todas as solicitações
-
-
-GET {{server}}/solicitacoes
-
-
-### Buscar uma solicitação por ID
-
-
-GET {{server}}/solicitacoes/1
-
+### Buscar uma solicitação por chave
+GET {{server}}/solicitacoes/1/2026-05-01/14:00
 
 ### Atualizar status de uma solicitação
-
-
-PUT {{server}}/solicitacoes/6/17%2F06%2F2026/08%3A40%20-%2009%3A30
+PUT {{server}}/solicitacoes/1/2026-05-01/14:00
 Content-Type: application/json
 
-
 {
- "status": "Aprovado"
+  "status": "Aprovado"
 }
 
-
 ### Deletar uma solicitação
-DELETE {{server}}/solicitacoes/1
+DELETE {{server}}/solicitacoes/1/2026-05-01/14:00
