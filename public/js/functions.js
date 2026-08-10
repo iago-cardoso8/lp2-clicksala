@@ -1,5 +1,6 @@
 
 import { horariosBaseOcupados, blocosHorarios, diasSemana } from './dados.js'
+import { createAuthHeaders } from './auth.js';
 
 let listaSalas = [];
 const BASE_URL = '/solicitacoes';
@@ -21,7 +22,9 @@ export async function carregarSalas() {
 
 async function carregarSolicitacoes() {
   try {
-    const res = await fetch(BASE_URL);
+    const res = await fetch(BASE_URL, {
+      headers: createAuthHeaders(),
+    });
     if (!res.ok) {
       throw new Error("Erro ao buscar dados");
     }
@@ -242,7 +245,8 @@ async function cancelarAgendamento(cod_sala, data, hora) {
     const res = await fetch(BASE_URL, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...createAuthHeaders(),
       },
       body: JSON.stringify({ cod_sala, data, hora })
     });
@@ -396,7 +400,11 @@ document.getElementById("form-solicitacao")
 
     try {
       console.log("1. Tentando buscar agendamentos existentes...");
-      const res = await fetch(BASE_URL);
+      const res = await fetch(BASE_URL, {
+        headers: {
+          ...createAuthHeaders(),
+        },
+      });
       console.log("2. Resposta do servidor:", res.status);
       if (!res.ok) {
         throw new Error("Erro ao buscar agendamentos");
@@ -437,7 +445,8 @@ document.getElementById("form-solicitacao")
       const resPost = await fetch(BASE_URL, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...createAuthHeaders(),
         },
         body: JSON.stringify({
           cod_sala: sala.id,

@@ -1,4 +1,12 @@
 {
+  "usuarios": [
+    {
+      "id": 1,
+      "nome": "Usuario Teste",
+      "email": "teste@clicksala.com",
+      "senha": "password123"
+    }
+  ],
   "salas": [
     {
       "id": 1,
@@ -87,14 +95,16 @@
       "data": "01/10/2026",
       "hora": "14:40 - 15:30",
       "finalidade": "Aula",
-      "status": "Pendente"
+      "status": "Pendente",
+      "id_user": 1
     },
     {
       "cod_sala": 2,
       "data": "02/10/2026",
       "hora": "10:40 - 11:30",
       "finalidade": "Reunião",
-      "status": "Pendente"
+      "status": "Pendente",
+      "id_user": 1
     }
   ]
 }

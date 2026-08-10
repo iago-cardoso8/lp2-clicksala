@@ -7,6 +7,12 @@ export interface Sala {
   equipamento: unknown[];
 }
 
+export interface User {
+  id: number;
+  nome: string;
+  email: string;
+}
+
 export interface Solicitacao {
   cod_sala: number | string;
   data: string;
@@ -21,6 +27,7 @@ export interface CreateSolicitacaoDTO {
   hora: string;
   finalidade?: string;
   status?: string;
+  id_user?: number;
 }
 
 export interface UpdateSolicitacaoDTO {

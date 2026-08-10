@@ -6,6 +6,15 @@ async function up() {
   await prisma.$connect();
 
   await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS usuario (
+      id integer primary key autoincrement,
+      nome varchar(80) not null,
+      email varchar(255) not null unique,
+      senha varchar(255) not null
+    )
+  `);
+
+  await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS sala (
       id integer primary key autoincrement,
       nome varchar(40) not null,
@@ -23,7 +32,10 @@ async function up() {
       hora TEXT NOT NULL,
       finalidade varchar(800),
       status varchar(20) not null default 'Pendente',
+      id_user integer not null,
       foreign key (cod_sala) references sala(id)
+        on delete cascade on update cascade,
+      foreign key (id_user) references usuario(id)
         on delete cascade on update cascade,
       primary key (cod_sala, data, hora)
     )

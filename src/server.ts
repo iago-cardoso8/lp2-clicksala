@@ -7,6 +7,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import solicitacoesRoutes from './routes/solicitacoesRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import Migration from './database/migration.js';
 import Seed from './database/seeders.js';
 import requireJson from './middlewares/requireJson.js';
@@ -29,6 +30,7 @@ app.use(requireJson);
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+app.use('/auth', authRoutes);
 app.use('/solicitacoes', solicitacoesRoutes);
 
 await Migration.up();

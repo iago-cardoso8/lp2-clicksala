@@ -2,10 +2,17 @@ import { resolve, dirname } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { prisma } from './prismaClient.js';
-import solicitacoesModel from '../models/solicitacoesModel.js';
+import { hashPassword } from '../utils/password.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+interface SeedUsuario {
+  id: number;
+  nome: string;
+  email: string;
+  senha: string;
+}
 
 interface SeedSala {
   id: number;
@@ -22,9 +29,11 @@ interface SeedSolicitacao {
   hora: string;
   finalidade: string;
   status: string;
+  id_user: number;
 }
 
 interface SeedFile {
+  usuarios: SeedUsuario[];
   salas: SeedSala[];
   solicitacoes: SeedSolicitacao[];
 }
@@ -32,6 +41,19 @@ interface SeedFile {
 async function up() {
   const file = resolve(__dirname, 'seeders.json');
   const seed = JSON.parse(readFileSync(file, 'utf-8')) as SeedFile;
+
+  if (Array.isArray(seed.usuarios)) {
+    for (const usuario of seed.usuarios) {
+      const senha = hashPassword(usuario.senha);
+
+      await prisma.$executeRawUnsafe(
+        `INSERT OR IGNORE INTO usuario (nome, email, senha) VALUES (?, ?, ?)`,
+        usuario.nome,
+        usuario.email,
+        senha
+      );
+    }
+  }
 
   if (Array.isArray(seed.salas)) {
     for (const sala of seed.salas) {
@@ -58,7 +80,7 @@ async function up() {
   }
 
   for (const solicitacao of seed.solicitacoes) {
-    const exists = await prisma.solicitacao.findUnique({
+    await prisma.solicitacao.upsert({
       where: {
         cod_sala_data_hora: {
           cod_sala: Number(solicitacao.cod_sala),
@@ -66,11 +88,20 @@ async function up() {
           hora: solicitacao.hora,
         },
       },
+      update: {
+        finalidade: solicitacao.finalidade,
+        status: solicitacao.status,
+        id_user: solicitacao.id_user,
+      },
+      create: {
+        cod_sala: Number(solicitacao.cod_sala),
+        data: solicitacao.data,
+        hora: solicitacao.hora,
+        finalidade: solicitacao.finalidade,
+        status: solicitacao.status,
+        id_user: solicitacao.id_user,
+      },
     });
-
-    if (!exists) {
-      await solicitacoesModel.create(solicitacao);
-    }
   }
 }
 

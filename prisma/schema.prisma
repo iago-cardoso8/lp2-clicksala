@@ -7,6 +7,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Usuario {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  email        String        @unique
+  senha        String
+  solicitacoes Solicitacao[]
+}
+
 model Sala {
   id          Int    @id @default(autoincrement())
   nome        String
@@ -23,7 +31,9 @@ model Solicitacao {
   hora       String
   finalidade String?
   status     String @default("Pendente")
-  sala       Sala   @relation(fields: [cod_sala], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id_user    Int
+  sala       Sala    @relation(fields: [cod_sala], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  usuario    Usuario @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([cod_sala, data, hora])
 }

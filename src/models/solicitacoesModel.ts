@@ -47,8 +47,8 @@ export async function getSalas(): Promise<Sala[]> {
   }));
 }
 
-export async function create({ cod_sala, data, hora, finalidade, status }: CreateSolicitacaoDTO): Promise<Solicitacao> {
-  if (!cod_sala || !data || !hora) {
+export async function create({ cod_sala, data, hora, finalidade, status, id_user }: CreateSolicitacaoDTO): Promise<Solicitacao> {
+  if (!cod_sala || !data || !hora || !id_user) {
     throw new Error('Unable to create solicitacao');
   }
 
@@ -59,13 +59,14 @@ export async function create({ cod_sala, data, hora, finalidade, status }: Creat
       hora,
       finalidade: finalidade || '',
       status: status || 'Pendente',
+      id_user: Number(id_user),
     },
   });
 
   return normalizeSolicitacao(solicitacao);
 }
 
-export async function read(field?: string, value?: string): Promise<Solicitacao[]> {
+export async function read(field?: string, value?: string, id_user?: number): Promise<Solicitacao[]> {
   const where: Record<string, any> = {};
 
   if (field && value && allowedFields.has(field)) {
@@ -77,6 +78,10 @@ export async function read(field?: string, value?: string): Promise<Solicitacao[
     }
   }
 
+  if (id_user) {
+    where.id_user = id_user;
+  }
+
   const result = await prisma.solicitacao.findMany({
     where,
     orderBy: [{ data: 'asc' }, { hora: 'asc' }],
@@ -85,19 +90,23 @@ export async function read(field?: string, value?: string): Promise<Solicitacao[
   return result.map(normalizeSolicitacao);
 }
 
-export async function readByKey(cod_sala: number | string, data: string, hora: string): Promise<Solicitacao> {
+export async function readByKey(cod_sala: number | string, data: string, hora: string, id_user?: number): Promise<Solicitacao> {
   if (!cod_sala || !data || !hora) {
     throw new Error('Unable to find solicitacao');
   }
 
-  const solicitacao = await prisma.solicitacao.findUnique({
-    where: {
-      cod_sala_data_hora: {
-        cod_sala: Number(cod_sala),
-        data,
-        hora,
-      },
-    },
+  const where: Record<string, any> = {
+    cod_sala: Number(cod_sala),
+    data,
+    hora,
+  };
+
+  if (id_user) {
+    where.id_user = id_user;
+  }
+
+  const solicitacao = await prisma.solicitacao.findFirst({
+    where,
   });
 
   if (!solicitacao) {
@@ -107,39 +116,45 @@ export async function readByKey(cod_sala: number | string, data: string, hora: s
   return normalizeSolicitacao(solicitacao);
 }
 
-export async function update({ cod_sala, data, hora, status }: UpdateSolicitacaoDTO): Promise<Solicitacao> {
-  if (!cod_sala || !data || !hora || !status) {
+export async function update({ cod_sala, data, hora, status, id_user }: UpdateSolicitacaoDTO & { id_user?: number }): Promise<Solicitacao> {
+  if (!cod_sala || !data || !hora || !status || !id_user) {
     throw new Error('Unable to update solicitacao');
   }
 
-  const updated = await prisma.solicitacao.update({
+  const updated = await prisma.solicitacao.updateMany({
     where: {
-      cod_sala_data_hora: {
-        cod_sala: Number(cod_sala),
-        data,
-        hora,
-      },
+      cod_sala: Number(cod_sala),
+      data,
+      hora,
+      id_user,
     },
     data: { status },
   });
 
-  return normalizeSolicitacao(updated);
+  if (updated.count === 0) {
+    throw new Error('Solicitação não encontrada');
+  }
+
+  return readByKey(cod_sala, data, hora, id_user);
 }
 
-export async function remove(cod_sala: number | string, data: string, hora: string): Promise<boolean> {
-  if (!cod_sala || !data || !hora) {
+export async function remove(cod_sala: number | string, data: string, hora: string, id_user?: number): Promise<boolean> {
+  if (!cod_sala || !data || !hora || !id_user) {
     throw new Error('Unable to remove solicitacao');
   }
 
-  await prisma.solicitacao.delete({
+  const deleted = await prisma.solicitacao.deleteMany({
     where: {
-      cod_sala_data_hora: {
-        cod_sala: Number(cod_sala),
-        data,
-        hora,
-      },
+      cod_sala: Number(cod_sala),
+      data,
+      hora,
+      id_user,
     },
   });
+
+  if (deleted.count === 0) {
+    throw new Error('Solicitação não encontrada');
+  }
 
   return true;
 }
