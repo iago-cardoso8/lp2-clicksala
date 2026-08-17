@@ -1,26 +1,35 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { hash, verify } from 'argon2';
 
-const SALT_BYTES = 16;
-const KEY_LENGTH = 64;
-
-export function hashPassword(password: string) {
-  const salt = randomBytes(SALT_BYTES).toString('hex');
-  const hash = scryptSync(password, salt, KEY_LENGTH).toString('hex');
-  return `${salt}:${hash}`;
+/**
+ * Criptografa uma senha usando Argon2
+ * @param password - Senha em texto plano
+ * @returns Hash seguro da senha
+ */
+export async function hashPassword(password: string): Promise<string> {
+  try {
+    const hashedPassword = await hash(password, {
+      type: 2, // Argon2id (melhor combinação de segurança)
+      memoryCost: 19 * 1024, // 19 MB de memória
+      timeCost: 2, // 2 iterações
+      parallelism: 1, // 1 thread
+      raw: false, // Retorna string em vez de Buffer
+    });
+    return hashedPassword;
+  } catch (error) {
+    throw new Error(`Erro ao criptografar senha: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
-export function verifyPassword(password: string, stored: string) {
-  if (!stored || !stored.includes(':')) {
+/**
+ * Verifica se uma senha corresponde ao hash armazenado
+ * @param password - Senha em texto plano
+ * @param hashedPassword - Hash armazenado
+ * @returns true se a senha é válida, false caso contrário
+ */
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    return await verify(hashedPassword, password);
+  } catch (error) {
     return false;
   }
-
-  const [salt, key] = stored.split(':');
-  const hash = scryptSync(password, salt, KEY_LENGTH);
-  const keyBuffer = Buffer.from(key, 'hex');
-
-  if (keyBuffer.length !== hash.length) {
-    return false;
-  }
-
-  return timingSafeEqual(hash, keyBuffer);
 }

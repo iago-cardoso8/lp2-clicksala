@@ -5,7 +5,7 @@ export default function requireJson(req: Request, res: Response, next: NextFunct
   const contentType = req.headers['content-type'] ?? '';
 
   if ((req.method === 'POST' || req.method === 'PUT') && !contentType.includes('application/json')) {
-    throw new HttpError(415, 'Content-Type must be application/json');
+    return next(new HttpError(415, 'Content-Type must be application/json'));
   }
 
   next();

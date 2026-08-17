@@ -1,16 +1,50 @@
 # Rest Client (VS Code Extension - HTTP Requests)
 @server=http://localhost:3000
+@token=seu_token_jwt_aqui
 
+### ============================================
+### AUTENTICAÇÃO
+### ============================================
+
+### Registrar novo usuário
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "joao@example.com",
+  "password": "senha123"
+}
+
+### Login
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "joao@example.com",
+  "password": "senha123"
+}
+
+### Obter dados do usuário autenticado
+GET {{server}}/auth/me
+Authorization: Bearer {{token}}
+
+### ============================================
+### SOLICITAÇÕES
+### ============================================
 
 ### Listar salas disponíveis
 GET {{server}}/solicitacoes/salas
+Authorization: Bearer {{token}}
 
 ### Listar todas as solicitações
 GET {{server}}/solicitacoes
+Authorization: Bearer {{token}}
 
 ### Criar solicitação de sala
 POST {{server}}/solicitacoes
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "sala": "SALA 1",
@@ -21,10 +55,12 @@ Content-Type: application/json
 
 ### Buscar uma solicitação por chave
 GET {{server}}/solicitacoes/1/2026-05-01/14:00
+Authorization: Bearer {{token}}
 
 ### Atualizar status de uma solicitação
 PUT {{server}}/solicitacoes/1/2026-05-01/14:00
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "status": "Aprovado"
@@ -32,3 +68,4 @@ Content-Type: application/json
 
 ### Deletar uma solicitação
 DELETE {{server}}/solicitacoes/1/2026-05-01/14:00
+Authorization: Bearer {{token}}
