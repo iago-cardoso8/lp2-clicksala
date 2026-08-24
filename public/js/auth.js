@@ -32,12 +32,8 @@ export async function login(email, password) {
   });
 
   if (!res.ok) {
-    try {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Falha no login');
-    } catch (e) {
-      throw new Error('Falha no login');
-    }
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.error || 'Falha no login');
   }
 
   return res.json();
@@ -51,12 +47,8 @@ export async function register(nome, email, password) {
   });
 
   if (!res.ok) {
-    try {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Falha no cadastro');
-    } catch (e) {
-      throw new Error('Falha no cadastro');
-    }
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.error || 'Falha no cadastro');
   }
 
   return res.json();

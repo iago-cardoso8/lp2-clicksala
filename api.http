@@ -1,33 +1,75 @@
-# Rest Client (VS Code Extension - HTTP Requests)
+# REST Client (extensão REST Client do VS Code)
 @server=http://localhost:3000
-@token=seu_token_jwt_aqui
+@email=joao@example.com
+@password=senha123
 
 ### ============================================
-### AUTENTICAÇÃO
+### 1. CADASTRO DE USUÁRIO
 ### ============================================
 
-### Registrar novo usuário
+# Esperado: 201 Created na primeira execução.
+# Se o email já existir, a API responde 409 Conflict.
 POST {{server}}/auth/register
 Content-Type: application/json
 
 {
   "nome": "João Silva",
-  "email": "joao@example.com",
-  "password": "senha123"
+  "email": "{{email}}",
+  "password": "{{password}}"
 }
 
-### Login
+### ============================================
+### 2. AUTENTICAÇÃO VÁLIDA
+### ============================================
+
+# Esperado: 200 OK com user e token.
+# A resposta nomeada permite reutilizar o JWT nas próximas requisições.
+# @name login
 POST {{server}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "joao@example.com",
-  "password": "senha123"
+  "email": "{{email}}",
+  "password": "{{password}}"
 }
 
-### Obter dados do usuário autenticado
+### ============================================
+### 3. AUTENTICAÇÃO COM CREDENCIAIS INVÁLIDAS
+### ============================================
+
+# Esperado: 401 Unauthorized.
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "senha-incorreta"
+}
+
+### ============================================
+### 4. ROTA PROTEGIDA SEM AUTENTICAÇÃO
+### ============================================
+
+# Esperado: 401 Unauthorized.
+# Esta requisição não envia o header Authorization.
+GET {{server}}/solicitacoes
+
+### ============================================
+### 5. MESMA ROTA PROTEGIDA APÓS AUTENTICAÇÃO
+### ============================================
+
+# Esperado: 200 OK.
+# O token é lido diretamente da resposta da requisição nomeada login.
+GET {{server}}/solicitacoes
+Authorization: Bearer {{login.response.body.$.token}}
+
+### ============================================
+### COMPROVAÇÃO OPCIONAL DO TOKEN
+### ============================================
+
+# Esperado: 200 OK com os dados do usuário autenticado.
 GET {{server}}/auth/me
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
 
 ### ============================================
 ### SOLICITAÇÕES
@@ -35,16 +77,16 @@ Authorization: Bearer {{token}}
 
 ### Listar salas disponíveis
 GET {{server}}/solicitacoes/salas
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
 
 ### Listar todas as solicitações
 GET {{server}}/solicitacoes
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
 
 ### Criar solicitação de sala
 POST {{server}}/solicitacoes
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
 
 {
   "sala": "SALA 1",
@@ -55,12 +97,12 @@ Authorization: Bearer {{token}}
 
 ### Buscar uma solicitação por chave
 GET {{server}}/solicitacoes/1/2026-05-01/14:00
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
 
 ### Atualizar status de uma solicitação
 PUT {{server}}/solicitacoes/1/2026-05-01/14:00
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
 
 {
   "status": "Aprovado"
@@ -68,4 +110,4 @@ Authorization: Bearer {{token}}
 
 ### Deletar uma solicitação
 DELETE {{server}}/solicitacoes/1/2026-05-01/14:00
-Authorization: Bearer {{token}}
+Authorization: Bearer {{login.response.body.$.token}}
