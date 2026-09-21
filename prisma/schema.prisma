@@ -13,6 +13,17 @@ model Usuario {
   email        String        @unique
   senha        String
   solicitacoes Solicitacao[]
+  image        Image?
+}
+
+model Image {
+  id       Int    @id @default(autoincrement())
+  filename String @unique
+  mimeType String
+  size     Int
+  publicUrl String @unique
+  userId   Int    @unique
+  user     Usuario @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Sala {

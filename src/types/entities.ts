@@ -26,8 +26,7 @@ export interface CreateSolicitacaoDTO {
   data: string;
   hora: string;
   finalidade?: string;
-  status?: string;
-  id_user?: number;
+  id_user: number;
 }
 
 export interface UpdateSolicitacaoDTO {

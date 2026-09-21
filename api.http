@@ -18,6 +18,26 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
+### Cadastro duplicado
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Cadastro inválido: senha curta e e-mail inválido
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "A",
+  "email": "email-invalido",
+  "password": "123"
+}
+
 ### ============================================
 ### 2. AUTENTICAÇÃO VÁLIDA
 ### ============================================
@@ -91,16 +111,52 @@ Authorization: Bearer {{login.response.body.$.token}}
 {
   "sala": "SALA 1",
   "data": "2026-05-01",
-  "hora": "14:00",
+  "hora": "14:00 - 14:50",
   "finalidade": "Reunião de projeto"
 }
 
+### Criar solicitação inválida: sala inexistente
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "cod_sala": 99999,
+  "data": "2026-05-01",
+  "hora": "14:00 - 14:50",
+  "finalidade": "Teste"
+}
+
+### Criar solicitação inválida: data impossível
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "cod_sala": 1,
+  "data": "31/02/2026",
+  "hora": "14:00 - 14:50",
+  "finalidade": "Teste"
+}
+
+### Criar solicitação inválida: intervalo de horário invertido
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "cod_sala": 1,
+  "data": "01/10/2026",
+  "hora": "15:00 - 14:00",
+  "finalidade": "Teste"
+}
+
 ### Buscar uma solicitação por chave
-GET {{server}}/solicitacoes/1/2026-05-01/14:00
+GET {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Atualizar status de uma solicitação
-PUT {{server}}/solicitacoes/1/2026-05-01/14:00
+PUT {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.$.token}}
 
@@ -109,5 +165,77 @@ Authorization: Bearer {{login.response.body.$.token}}
 }
 
 ### Deletar uma solicitação
-DELETE {{server}}/solicitacoes/1/2026-05-01/14:00
+DELETE {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
+
+### ============================================
+### UPLOAD - ROTEIRO DE DEMONSTRAÇÃO
+### ============================================
+
+### 1) Envio sem autenticação deve responder 401
+POST {{server}}/api/users/image
+Content-Type: multipart/form-data; boundary=----UploadBoundary
+
+------UploadBoundary
+Content-Disposition: form-data; name="image"; filename="avatar.png"
+Content-Type: image/png
+
+< ./public/uploads/.gitkeep
+------UploadBoundary--
+
+### 2) Envio válido com token deve responder 201 e retornar o caminho público do arquivo
+POST {{server}}/api/users/image
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: multipart/form-data; boundary=----UploadBoundary
+
+------UploadBoundary
+Content-Disposition: form-data; name="image"; filename="avatar.png"
+Content-Type: image/png
+
+< ./public/uploads/.gitkeep
+------UploadBoundary--
+
+### 3) Acesso ao caminho devolvido pela API
+GET {{server}}/uploads/{{filename}}
+
+### 4) Arquivo maior que o limite deve responder 400
+POST {{server}}/api/users/image
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: multipart/form-data; boundary=----UploadBoundary
+
+------UploadBoundary
+Content-Disposition: form-data; name="image"; filename="big.png"
+Content-Type: image/png
+
+< ./public/uploads/.gitkeep
+------UploadBoundary--
+
+### 5) Tipo não permitido deve responder 400
+POST {{server}}/api/users/image
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: multipart/form-data; boundary=----UploadBoundary
+
+------UploadBoundary
+Content-Disposition: form-data; name="image"; filename="avatar.txt"
+Content-Type: text/plain
+
+< ./public/uploads/.gitkeep
+------UploadBoundary--
+
+### 6) Reenvio pelo mesmo usuário atualiza o caminho
+PUT {{server}}/api/users/image
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: multipart/form-data; boundary=----UploadBoundary
+
+------UploadBoundary
+Content-Disposition: form-data; name="image"; filename="avatar2.png"
+Content-Type: image/png
+
+< ./public/uploads/.gitkeep
+------UploadBoundary--
+
+### Logout e limpeza do cookie HttpOnly
+POST {{server}}/auth/logout
+Content-Type: application/json
+
+{}

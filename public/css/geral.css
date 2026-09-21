@@ -98,3 +98,18 @@ body {
   color: #777;
   border: 1px solid #ccc;
 }
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 200;
+  max-width: 360px;
+  padding: 14px 18px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--danger-color);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+.toast.success {
+  background: var(--primary-color);
+}

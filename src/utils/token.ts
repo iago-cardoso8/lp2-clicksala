@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { JWT_SECRET } from '../config/security.js';
 
-const SECRET = process.env.JWT_SECRET || 'clicksala-secret-key-change-in-production';
 const EXPIRATION_SECONDS = 60 * 60 * 24; // 24 horas
 
 /**
@@ -21,7 +21,7 @@ function parsePayload(token: string): { exp: number; sub: string } | null {
     }
 
     // Validar assinatura
-    const expected = createHmac('sha256', SECRET).update(`${header}.${payload}`).digest();
+    const expected = createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest();
     const signatureBuffer = Buffer.from(signature, 'base64url');
 
     if (signatureBuffer.length !== expected.length || !timingSafeEqual(expected, signatureBuffer)) {
@@ -55,7 +55,7 @@ export function createToken(payload: { sub: string; nome: string; email: string 
       exp: Math.floor(Date.now() / 1000) + EXPIRATION_SECONDS, // Tempo de expiração
     })
   );
-  const signature = base64url(createHmac('sha256', SECRET).update(`${header}.${body}`).digest());
+  const signature = base64url(createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest());
   return `${header}.${body}.${signature}`;
 }
 

@@ -1,5 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import express from 'express';
 import morgan from 'morgan';
@@ -12,6 +11,7 @@ import Migration from './database/migration.js';
 import Seed from './database/seeders.js';
 import requireJson from './middlewares/requireJson.js';
 import errorHandler from './middlewares/errorHandler.js';
+import usersRoutes from './routes/usersRoutes.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -29,9 +29,11 @@ app.use(cors({ origin: CORS_ORIGIN }));
 app.use(requireJson);
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
 
 app.use('/auth', authRoutes);
 app.use('/solicitacoes', solicitacoesRoutes);
+app.use('/api/users', usersRoutes);
 
 await Migration.up();
 await Seed.up();

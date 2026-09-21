@@ -36,6 +36,7 @@
           <span class="logo-text">CLICKSala</span>
         </div>
         <div class="user-info" style="display: none; align-items: center; gap: 10px;">
+          <img id="avatar-header" src="" alt="Avatar" style="display: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #fff;" />
           <span class="username"></span>
           <button id="btn-logout" class="btn btn-secondary" style="padding: 8px 12px;">Logout</button>
         </div>
@@ -48,12 +49,12 @@
             <div class="form-header">Entrar</div>
             <form id="form-login">
               <div class="form-group">
-                <label>Email:</label>
-                <input type="email" id="login-email" required />
+                <label for="login-email">Email:</label>
+                <input type="email" id="login-email" name="email" required />
               </div>
               <div class="form-group">
-                <label>Senha:</label>
-                <input type="password" id="login-password" required />
+                <label for="login-password">Senha:</label>
+                <input type="password" id="login-password" name="password" minlength="6" maxlength="128" required />
               </div>
               <div style="display: flex; justify-content: space-between; gap: 10px;">
                 <button type="button" class="btn btn-secondary" id="btn-show-register">Criar conta</button>
@@ -69,21 +70,40 @@
             <div class="form-header">Cadastro</div>
             <form id="form-register">
               <div class="form-group">
-                <label>Nome:</label>
-                <input type="text" id="register-nome" required />
+                <label for="register-nome">Nome:</label>
+                <input type="text" id="register-nome" name="nome" minlength="3" maxlength="100" required />
               </div>
               <div class="form-group">
-                <label>Email:</label>
-                <input type="email" id="register-email" required />
+                <label for="register-email">Email:</label>
+                <input type="email" id="register-email" name="email" maxlength="255" required />
               </div>
               <div class="form-group">
-                <label>Senha:</label>
-                <input type="password" id="register-password" required />
+                <label for="register-password">Senha:</label>
+                <input type="password" id="register-password" name="password" minlength="6" maxlength="128" required />
               </div>
               <div style="display: flex; justify-content: space-between; gap: 10px;">
                 <button type="button" class="btn btn-secondary" id="btn-show-login">Já tenho conta</button>
                 <button type="submit" class="btn btn-solicitar">Cadastrar</button>
               </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="perfil" class="screen">
+          <div class="breadcrumb">Usuário > Perfil</div>
+          <div class="form-box" style="max-width: 520px; margin: 0 auto;">
+            <div class="form-header">Avatar do Usuário</div>
+            <form id="form-upload-avatar">
+              <div class="form-group">
+                <label for="image-file">Escolha uma imagem:</label>
+                <input type="file" id="image-file" name="image" accept="image/jpeg,image/png,image/gif" required />
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="submit" class="btn btn-solicitar">Enviar</button>
+                <img id="avatar-preview" src="" alt="Prévia do avatar" style="display: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd;" />
+              </div>
+              <div id="upload-status" style="margin-top: 12px; color: #333;"></div>
+              <div id="upload-errors" style="margin-top: 12px; color: #b3261e;"></div>
             </form>
           </div>
         </section>
@@ -225,6 +245,7 @@
         </section>
       </div>
     </main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     <script type="module" src="./js/authMain.js"></script>
   </body>
 </html>

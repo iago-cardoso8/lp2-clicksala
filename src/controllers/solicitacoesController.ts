@@ -4,14 +4,14 @@ import HttpError from '../errors/HttpError.js';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
-    const { field, value } = req.query;
+    const { field, value } = req.query as { field?: string; value?: string };
     const userId = Number((req as any).userId);
 
     if (!userId) {
       throw new HttpError(401, 'Não autorizado.');
     }
 
-    const result = await solicitacoesModel.read(field as string, value as string, userId);
+    const result = await solicitacoesModel.read(field, value, userId);
     res.json(result);
   } catch (err) {
     next(err);
@@ -29,7 +29,7 @@ export async function getSalas(req: Request, res: Response, next: NextFunction) 
 
 export async function getByKey(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cod_sala, data, hora } = req.params;
+    const { cod_sala, data, hora } = req.params as unknown as { cod_sala: number; data: string; hora: string };
     const userId = Number((req as any).userId);
 
     if (!userId) {
@@ -53,19 +53,17 @@ export async function create(req: Request, res: Response, next: NextFunction) {
       throw new HttpError(401, 'Não autorizado.');
     }
 
-    if (!rawSala || !data || !hora) {
-      throw new HttpError(400, 'Os campos sala, data e hora são obrigatórios.');
-    }
-
     let normalizedCodSala: number | string = rawSala;
+    const salas = await solicitacoesModel.getSalas();
 
     if (typeof rawSala === 'string') {
       const trimmedSala = rawSala.trim();
       if (/^\d+$/.test(trimmedSala)) {
         normalizedCodSala = Number(trimmedSala);
       } else {
-        const salaEncontrada = (await solicitacoesModel.getSalas()).find(
-          (item) => item.nome.toLowerCase() === trimmedSala.toLowerCase()
+        const salaEncontrada = salas.find(
+          (item) => item.nome.toLowerCase() === trimmedSala.toLowerCase() ||
+            `${item.nome} - ${item.bloco}`.toLowerCase() === trimmedSala.toLowerCase()
         );
 
         if (!salaEncontrada) {
@@ -76,15 +74,9 @@ export async function create(req: Request, res: Response, next: NextFunction) {
       }
     }
 
-    const conflito = (await solicitacoesModel.read(undefined, undefined)).some((s: any) =>
-      Number(s.cod_sala) === Number(normalizedCodSala) &&
-      s.data === data &&
-      s.hora === hora &&
-      s.status === 'Pendente'
-    );
-
-    if (conflito) {
-      throw new HttpError(409, 'Já existe uma solicitação para essa sala neste dia e horário.');
+    const salaExiste = salas.some((item) => item.id === Number(normalizedCodSala));
+    if (!salaExiste) {
+      throw new HttpError(404, 'Sala não encontrada.');
     }
 
     const novaSolicitacao = await solicitacoesModel.create({
@@ -109,12 +101,8 @@ export async function update(req: Request, res: Response, next: NextFunction) {
       throw new HttpError(401, 'Não autorizado.');
     }
 
-    if (!status) {
-      throw new HttpError(400, 'O status é obrigatório.');
-    }
-
     const solicitacaoAtualizada = await solicitacoesModel.update({
-      cod_sala: req.params.cod_sala,
+      cod_sala: Number(req.params.cod_sala),
       data: req.params.data,
       hora: req.params.hora,
       status,
@@ -134,13 +122,9 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
-    const cod_sala = req.params.cod_sala ?? req.body?.cod_sala ?? req.query?.cod_sala;
-    const data = req.params.data ?? req.body?.data ?? req.query?.data;
-    const hora = req.params.hora ?? req.body?.hora ?? req.query?.hora;
-
-    if (!cod_sala || !data || !hora) {
-      throw new HttpError(400, 'Parâmetros cod_sala, data e hora são obrigatórios.');
-    }
+    const cod_sala = Number(req.params.cod_sala ?? req.body.cod_sala);
+    const data = req.params.data ?? req.body.data;
+    const hora = req.params.hora ?? req.body.hora;
 
     const userId = Number((req as any).userId);
 

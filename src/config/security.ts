@@ -1,11 +1,21 @@
+import { z } from 'zod';
+import { randomBytes } from 'node:crypto';
+
 /**
  * Configurações de segurança da aplicação
  */
 
+const configuredSecret = process.env.JWT_SECRET;
+if (!configuredSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET deve ser configurado em produção.');
+}
+
+export const JWT_SECRET = configuredSecret || randomBytes(32).toString('hex');
+
 export const SECURITY_CONFIG = {
   // JWT Configuration
   jwt: {
-    secret: process.env.JWT_SECRET || 'clicksala-secret-key-change-in-production',
+    secret: JWT_SECRET,
     expirationSeconds: 60 * 60 * 24, // 24 horas
   },
 
@@ -38,78 +48,17 @@ export const SECURITY_CONFIG = {
   },
 };
 
-/**
- * Regex para validação de email
- */
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const passwordSchema = z.string()
+  .min(SECURITY_CONFIG.password.minLength, `Senha deve ter pelo menos ${SECURITY_CONFIG.password.minLength} caracteres.`)
+  .max(SECURITY_CONFIG.password.maxLength, `Senha não pode ter mais de ${SECURITY_CONFIG.password.maxLength} caracteres.`);
 
-/**
- * Validar força da senha
- */
-export function validatePasswordStrength(password: string): {
-  isValid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
+export const emailSchema = z.string()
+  .min(1, 'Email é obrigatório.')
+  .max(SECURITY_CONFIG.email.maxLength, `Email não pode ter mais de ${SECURITY_CONFIG.email.maxLength} caracteres.`)
+  .email('Email inválido.');
 
-  if (!password) {
-    errors.push('Senha é obrigatória.');
-  } else {
-    if (password.length < SECURITY_CONFIG.password.minLength) {
-      errors.push(`Senha deve ter pelo menos ${SECURITY_CONFIG.password.minLength} caracteres.`);
-    }
-
-    if (password.length > SECURITY_CONFIG.password.maxLength) {
-      errors.push(`Senha não pode ter mais de ${SECURITY_CONFIG.password.maxLength} caracteres.`);
-    }
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Validar email
- */
-export function validateEmail(email: string): {
-  isValid: boolean;
-  error?: string;
-} {
-  if (!email) {
-    return { isValid: false, error: 'Email é obrigatório.' };
-  }
-
-  if (email.length > SECURITY_CONFIG.email.maxLength) {
-    return { isValid: false, error: `Email não pode ter mais de ${SECURITY_CONFIG.email.maxLength} caracteres.` };
-  }
-
-  if (!EMAIL_REGEX.test(email)) {
-    return { isValid: false, error: 'Email inválido.' };
-  }
-
-  return { isValid: true };
-}
-
-/**
- * Validar nome do usuário
- */
-export function validateName(name: string): {
-  isValid: boolean;
-  error?: string;
-} {
-  if (!name) {
-    return { isValid: false, error: 'Nome é obrigatório.' };
-  }
-
-  if (name.trim().length < 3) {
-    return { isValid: false, error: 'Nome deve ter pelo menos 3 caracteres.' };
-  }
-
-  if (name.length > 100) {
-    return { isValid: false, error: 'Nome não pode ter mais de 100 caracteres.' };
-  }
-
-  return { isValid: true };
-}
+export const nameSchema = z.string()
+  .min(1, 'Nome é obrigatório.')
+  .trim()
+  .min(3, 'Nome deve ter pelo menos 3 caracteres.')
+  .max(100, 'Nome não pode ter mais de 100 caracteres.');

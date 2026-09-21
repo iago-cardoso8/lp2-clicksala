@@ -44,7 +44,7 @@ async function up() {
 
   if (Array.isArray(seed.usuarios)) {
     for (const usuario of seed.usuarios) {
-      const senha = hashPassword(usuario.senha);
+      const senha = await hashPassword(usuario.senha);
 
       await prisma.$executeRawUnsafe(
         `INSERT OR IGNORE INTO usuario (nome, email, senha) VALUES (?, ?, ?)`,

@@ -9,12 +9,16 @@ import HttpError from '../errors/HttpError.js';
 export default function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const cookieToken = req.headers.cookie
+      ?.match(/(?:^|;\s*)clicksala_token=([^;]+)/)?.[1];
+    const token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length)
+      : cookieToken ? decodeURIComponent(cookieToken) : undefined;
+
+    if (!token) {
       throw new HttpError(401, 'Token de autenticação não fornecido.');
     }
 
-    const token = authHeader.slice('Bearer '.length);
     const payload = verifyToken(token);
 
     if (!payload || !payload.sub) {

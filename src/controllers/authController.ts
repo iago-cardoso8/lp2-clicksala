@@ -3,34 +3,16 @@ import authModel from '../models/authModel.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { createToken } from '../utils/token.js';
 import HttpError from '../errors/HttpError.js';
-import { validateEmail, validateName, validatePasswordStrength } from '../config/security.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
+
+function setAuthCookie(res: Response, token: string) {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `clicksala_token=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400${secure}`);
+}
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { nome, email, password } = req.body;
-
-    // Validar entrada
-    if (!nome || !email || !password) {
-      throw new HttpError(400, 'Nome, email e senha são obrigatórios.');
-    }
-
-    // Validar nome
-    const nameValidation = validateName(nome);
-    if (!nameValidation.isValid) {
-      throw new HttpError(400, nameValidation.error || 'Nome inválido.');
-    }
-
-    // Validar email
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      throw new HttpError(400, emailValidation.error || 'Email inválido.');
-    }
-
-    // Validar força da senha
-    const passwordValidation = validatePasswordStrength(password);
-    if (!passwordValidation.isValid) {
-      throw new HttpError(400, passwordValidation.errors.join(' '));
-    }
 
     // Verificar se email já existe
     const existingUser = await authModel.findByEmail(email.toLowerCase());
@@ -46,9 +28,12 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       senha: hashedPassword 
     });
 
+    void sendWelcomeEmail(user.email, user.nome).catch((error) => {
+      console.error('Falha ao enviar e-mail de boas-vindas:', error);
+    });
+
     // Gerar token JWT
     const token = createToken({ sub: String(user.id), nome: user.nome, email: user.email });
-
     res.status(201).json({ 
       user: { id: user.id, nome: user.nome, email: user.email }, 
       token 
@@ -61,11 +46,6 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body;
-
-    // Validar entrada
-    if (!email || !password) {
-      throw new HttpError(400, 'Email e senha são obrigatórios.');
-    }
 
     // Buscar usuário por email (case-insensitive)
     const user = await authModel.findByEmail(email.toLowerCase());
@@ -82,6 +62,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     // Gerar token JWT
     const token = createToken({ sub: String(user.id), nome: user.nome, email: user.email });
+    setAuthCookie(res, token);
     res.json({ 
       user: { id: user.id, nome: user.nome, email: user.email }, 
       token 
@@ -110,4 +91,9 @@ export async function me(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export default { register, login, me };
+export function logout(_req: Request, res: Response) {
+  res.setHeader('Set-Cookie', 'clicksala_token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+  res.status(204).send();
+}
+
+export default { register, login, me, logout };

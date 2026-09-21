@@ -5,6 +5,34 @@ import { createAuthHeaders } from './auth.js';
 let listaSalas = [];
 const BASE_URL = '/solicitacoes';
 
+export function showToast(message, type = 'error') {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.className = `toast ${type}`;
+  toast.hidden = false;
+  window.clearTimeout(showToast.timeout);
+  showToast.timeout = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 4500);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
+  })[character] || character);
+}
+
+async function getApiError(response, fallback) {
+  const payload = await response.json().catch(() => null);
+  return payload?.details?.[0]?.message || payload?.error || fallback;
+}
+
 export async function carregarSalas() {
   try {
     const res = await fetch(`${BASE_URL}/salas`);
@@ -16,6 +44,7 @@ export async function carregarSalas() {
     return listaSalas;
   } catch (error) {
     console.error(error);
+    showToast(error.message || 'Erro ao buscar salas.');
     return [];
   }
 }
@@ -26,12 +55,13 @@ async function carregarSolicitacoes() {
       headers: createAuthHeaders(),
     });
     if (!res.ok) {
-      throw new Error("Erro ao buscar dados");
+      throw new Error(await getApiError(res, 'Erro ao buscar dados.'));
     }
     const dados = await res.json();
     atualizarListaMinhasSalas(dados);
   } catch (erro) {
     console.error(erro);
+    showToast(erro.message || 'Erro ao buscar dados.');
   }
 }
 
@@ -59,16 +89,16 @@ export function carregarTabelaSalas(salas) {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-             <td>${sala.nome}</td>
-             <td>${sala.bloco}</td>
-             <td>${sala.capacidade}</td>
-             <td>${sala.equipamento.join(", ")}</td>
-             <td>${sala.tipo}</td>
+             <td>${escapeHtml(sala.nome)}</td>
+             <td>${escapeHtml(sala.bloco)}</td>
+             <td>${escapeHtml(sala.capacidade)}</td>
+             <td>${escapeHtml(sala.equipamento.join(", "))}</td>
+             <td>${escapeHtml(sala.tipo)}</td>
              <td class="actions-cell">
-               <button class="btn btn-eye" data-action="ver" data-sala="${nomeCompleto}" title="Ver Horários">
+               <button class="btn btn-eye" data-action="ver" data-sala="${escapeHtml(nomeCompleto)}" title="Ver Horários">
                  <i class="fas fa-eye"></i>
                </button>
-               <button class="btn btn-solicitar" data-action="solicitar" data-sala="${nomeCompleto}">
+               <button class="btn btn-solicitar" data-action="solicitar" data-sala="${escapeHtml(nomeCompleto)}">
                  Solicitar
                </button>
              </td>
@@ -132,12 +162,12 @@ function verDetalhesSala(nomeSala) {
   const gradeContainer = document.getElementById("grade-horarios");
   let html = `
          <div class="schedule-header">HORÁRIOS</div>
-         ${diasSemana
-      .map((dia) => `<div class="schedule-header">${dia}</div>`)
+        ${diasSemana
+      .map((dia) => `<div class="schedule-header">${escapeHtml(dia)}</div>`)
       .join("")}
      `;
   blocosHorarios.forEach((blocoHora) => {
-    html += `<div class="schedule-cell time-col">${blocoHora}</div>`;
+    html += `<div class="schedule-cell time-col">${escapeHtml(blocoHora)}</div>`;
 
 
     diasSemana.forEach((dia) => {
@@ -148,9 +178,9 @@ function verDetalhesSala(nomeSala) {
           reserva.hora === blocoHora
       );
       if (isReservedBase) {
-        html += `<div class="schedule-cell reserved-slot" title="Horário Ocupado">Ocupado</div>`;
+        html += '<div class="schedule-cell reserved-slot" title="Horário Ocupado">Ocupado</div>';
       } else {
-        html += `<div class="schedule-cell" title="Horário Disponível">Disponível</div>`;
+        html += '<div class="schedule-cell" title="Horário Disponível">Disponível</div>';
       }
     });
   });
@@ -218,7 +248,7 @@ export function atualizarListaMinhasSalas(lista) {
 
 
     if (item.status === "Pendente") {
-      actionButton = `<button class="btn-lixeira" data-cod-sala="${item.cod_sala}" data-data="${item.data}" data-hora="${item.hora}" title="Cancelar Solicitação"><i class="fas fa-trash"></i></button>`;
+      actionButton = `<button class="btn-lixeira" data-cod-sala="${escapeHtml(item.cod_sala)}" data-data="${escapeHtml(item.data)}" data-hora="${escapeHtml(item.hora)}" title="Cancelar Solicitação"><i class="fas fa-trash"></i></button>`;
 
 
     } else {
@@ -227,10 +257,10 @@ export function atualizarListaMinhasSalas(lista) {
 
 
     tr.innerHTML = `
-               <td>${nomeSala}</td>
-               <td>${item.data}</td>
-               <td>${item.hora}</td>
-               <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+               <td>${escapeHtml(nomeSala)}</td>
+               <td>${escapeHtml(item.data)}</td>
+               <td>${escapeHtml(item.hora)}</td>
+               <td><span class="status-badge ${escapeHtml(statusClass)}">${escapeHtml(item.status)}</span></td>
                <td>${actionButton}</td>
            `;
     tbody.appendChild(tr);
@@ -252,14 +282,14 @@ async function cancelarAgendamento(cod_sala, data, hora) {
     });
 
     if (!res.ok) {
-      throw new Error("Erro ao cancelar solicitação");
+      throw new Error(await getApiError(res, 'Erro ao cancelar solicitação.'));
     }
 
-    alert("Solicitação cancelada com sucesso!");
+    showToast("Solicitação cancelada com sucesso!", 'success');
     carregarSolicitacoes();
   } catch (erro) {
     console.error(erro);
-    alert("Erro ao cancelar solicitação.");
+    showToast(erro.message || "Erro ao cancelar solicitação.");
   }
 }
 
@@ -385,13 +415,13 @@ document.getElementById("form-solicitacao")
 
 
     if (!salaNome || !dataISO || !hora) {
-      alert("Preencha todos os campos obrigatórios.");
+      showToast("Preencha todos os campos obrigatórios.");
       return;
     }
 
     const sala = listaSalas.find(s => `${s.nome} - ${s.bloco}` === salaNome);
     if (!sala) {
-      alert("Sala não encontrada!");
+      showToast("Sala não encontrada!");
       return;
     }
 
@@ -407,7 +437,7 @@ document.getElementById("form-solicitacao")
       });
       console.log("2. Resposta do servidor:", res.status);
       if (!res.ok) {
-        throw new Error("Erro ao buscar agendamentos");
+        throw new Error(await getApiError(res, "Erro ao buscar agendamentos."));
       }
       const agendamentos = await res.json();
       const conflitoUsuario = agendamentos.some(
@@ -419,7 +449,7 @@ document.getElementById("form-solicitacao")
 
 
       if (conflitoUsuario) {
-        alert("Você já possui um agendamento neste DIA e HORÁRIO.");
+        showToast("Você já possui um agendamento neste dia e horário.");
         return;
       }
 
@@ -437,7 +467,7 @@ document.getElementById("form-solicitacao")
 
 
       if (conflitoBase) {
-        alert(`ERRO: O horário ${hora} já está reservado.`);
+        showToast(`O horário ${hora} já está reservado.`);
         return;
       }
 
@@ -452,8 +482,7 @@ document.getElementById("form-solicitacao")
           cod_sala: sala.id,
           data: dataFormatada,
           hora,
-          finalidade,
-          status: "Pendente"
+          finalidade
         })
       });
 
@@ -461,17 +490,17 @@ document.getElementById("form-solicitacao")
 
 
       if (!resPost.ok) {
-        throw new Error("Erro ao salvar solicitação");
+        throw new Error(await getApiError(resPost, "Erro ao salvar solicitação."));
       }
 
 
-      alert("Solicitação realizada com sucesso!");
+      showToast("Solicitação realizada com sucesso!", 'success');
       limparFormulario();
       carregarSolicitacoes();
       showScreen("minhas-salas");
     } catch (erro) {
       console.error("Erro completo:", erro);
       console.error("Mensagem:", erro.message);
-      alert("Erro: " + erro.message);
+      showToast(erro.message || "Erro ao salvar solicitação.");
     }
   });

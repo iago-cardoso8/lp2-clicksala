@@ -1,4 +1,5 @@
 node_modules/
 src/database/db.sqlite
-a
 .env
+public/uploads/*
+!public/uploads/.gitkeep
