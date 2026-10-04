@@ -12,7 +12,16 @@ export default function validate(schema: ZodType, source: ValidationSource) {
       return;
     }
 
-    (req as any)[source] = result.data;
+    if (source === 'query') {
+      Object.defineProperty(req, source, {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: result.data,
+      });
+    } else {
+      (req as any)[source] = result.data;
+    }
     next();
   };
 }

@@ -38,6 +38,17 @@ Content-Type: application/json
   "password": "123"
 }
 
+### Cadastro novo: deve responder 201 e disparar o e-mail de boas-vindas
+# Troque o endereço se ele já tiver sido cadastrado; cadastro recusado não envia e-mail.
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Pessoa Teste de E-mail",
+  "email": "boas-vindas-clicksala@example.com",
+  "password": "senha123"
+}
+
 ### ============================================
 ### 2. AUTENTICAÇÃO VÁLIDA
 ### ============================================
@@ -81,6 +92,18 @@ GET {{server}}/solicitacoes
 # Esperado: 200 OK.
 # O token é lido diretamente da resposta da requisição nomeada login.
 GET {{server}}/solicitacoes
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Lista válida com filtro (field e value devem ser informados juntos)
+GET {{server}}/solicitacoes?field=status&value=Pendente
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Query inválida: field foi informado sem value (esperado: 400)
+GET {{server}}/solicitacoes?field=status
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Query inválida: field fora dos valores permitidos (esperado: 400)
+GET {{server}}/solicitacoes?field=campo_inexistente&value=x
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### ============================================
@@ -153,6 +176,14 @@ Authorization: Bearer {{login.response.body.$.token}}
 
 ### Buscar uma solicitação por chave
 GET {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Parâmetro de rota inválido: cod_sala não é um inteiro positivo (esperado: 400)
+GET {{server}}/solicitacoes/abc/2026-05-01/14:00%20-%2014:50
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Parâmetro de rota inválido: data inexistente (esperado: 400)
+GET {{server}}/solicitacoes/1/31%2F02%2F2026/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Atualizar status de uma solicitação
