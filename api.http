@@ -45,7 +45,7 @@ Content-Type: application/json
 
 {
   "nome": "Pessoa Teste de E-mail",
-  "email": "boas-vindas-clicksala@example.com",
+  "email": "boas-vindas-clicksala-{{$guid}}@example.com",
   "password": "senha123"
 }
 
@@ -198,72 +198,6 @@ Authorization: Bearer {{login.response.body.$.token}}
 ### Deletar uma solicitação
 DELETE {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
-
-### ============================================
-### UPLOAD - ROTEIRO DE DEMONSTRAÇÃO
-### ============================================
-
-### 1) Envio sem autenticação deve responder 401
-POST {{server}}/api/users/image
-Content-Type: multipart/form-data; boundary=----UploadBoundary
-
-------UploadBoundary
-Content-Disposition: form-data; name="image"; filename="avatar.png"
-Content-Type: image/png
-
-< ./public/uploads/.gitkeep
-------UploadBoundary--
-
-### 2) Envio válido com token deve responder 201 e retornar o caminho público do arquivo
-POST {{server}}/api/users/image
-Authorization: Bearer {{login.response.body.$.token}}
-Content-Type: multipart/form-data; boundary=----UploadBoundary
-
-------UploadBoundary
-Content-Disposition: form-data; name="image"; filename="avatar.png"
-Content-Type: image/png
-
-< ./public/uploads/.gitkeep
-------UploadBoundary--
-
-### 3) Acesso ao caminho devolvido pela API
-GET {{server}}/uploads/{{filename}}
-
-### 4) Arquivo maior que o limite deve responder 400
-POST {{server}}/api/users/image
-Authorization: Bearer {{login.response.body.$.token}}
-Content-Type: multipart/form-data; boundary=----UploadBoundary
-
-------UploadBoundary
-Content-Disposition: form-data; name="image"; filename="big.png"
-Content-Type: image/png
-
-< ./public/uploads/.gitkeep
-------UploadBoundary--
-
-### 5) Tipo não permitido deve responder 400
-POST {{server}}/api/users/image
-Authorization: Bearer {{login.response.body.$.token}}
-Content-Type: multipart/form-data; boundary=----UploadBoundary
-
-------UploadBoundary
-Content-Disposition: form-data; name="image"; filename="avatar.txt"
-Content-Type: text/plain
-
-< ./public/uploads/.gitkeep
-------UploadBoundary--
-
-### 6) Reenvio pelo mesmo usuário atualiza o caminho
-PUT {{server}}/api/users/image
-Authorization: Bearer {{login.response.body.$.token}}
-Content-Type: multipart/form-data; boundary=----UploadBoundary
-
-------UploadBoundary
-Content-Disposition: form-data; name="image"; filename="avatar2.png"
-Content-Type: image/png
-
-< ./public/uploads/.gitkeep
-------UploadBoundary--
 
 ### Logout e limpeza do cookie HttpOnly
 POST {{server}}/auth/logout
