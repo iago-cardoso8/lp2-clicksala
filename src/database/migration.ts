@@ -10,9 +10,15 @@ async function up() {
       id integer primary key autoincrement,
       nome varchar(100) not null,
       email varchar(255) not null unique,
-      senha varchar(255) not null
+      senha varchar(255) not null,
+      role varchar(20) not null default 'user'
     )
   `);
+
+  const usuarioColumns = await prisma.$queryRawUnsafe<Array<{ name: string }>>('PRAGMA table_info(usuario)');
+  if (!usuarioColumns.some((column) => column.name === 'role')) {
+    await prisma.$executeRawUnsafe("ALTER TABLE usuario ADD COLUMN role varchar(20) not null default 'user'");
+  }
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS sala (

@@ -12,6 +12,7 @@ import Seed from './database/seeders.js';
 import requireJson from './middlewares/requireJson.js';
 import errorHandler from './middlewares/errorHandler.js';
 import usersRoutes from './routes/usersRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -34,6 +35,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads
 app.use('/auth', authRoutes);
 app.use('/solicitacoes', solicitacoesRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/admin', adminRoutes);
 
 await Migration.up();
 await Seed.up();

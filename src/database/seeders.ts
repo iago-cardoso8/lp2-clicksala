@@ -12,6 +12,7 @@ interface SeedUsuario {
   nome: string;
   email: string;
   senha: string;
+  role?: string;
 }
 
 interface SeedSala {
@@ -47,10 +48,11 @@ async function up() {
       const senha = await hashPassword(usuario.senha);
 
       await prisma.$executeRawUnsafe(
-        `INSERT OR IGNORE INTO usuario (nome, email, senha) VALUES (?, ?, ?)`,
+        `INSERT OR IGNORE INTO usuario (nome, email, senha, role) VALUES (?, ?, ?, ?)`,
         usuario.nome,
         usuario.email,
-        senha
+        senha,
+        usuario.role ?? 'user'
       );
     }
   }

@@ -28,6 +28,9 @@
         <i class="fas fa-calendar-check"></i>
         <span class="text">Minhas Salas</span>
       </a>
+      <a class="menu-item" id="menu-admin" data-screen="admin" style="display: none;">
+        <i class="fas fa-user-shield"></i> <span class="text">Administração</span>
+      </a>
     </nav>
     <main class="main-content" id="main-content">
       <header class="top-bar">
@@ -43,30 +46,48 @@
       </header>
 
       <div class="screen-container">
-        <section id="login" class="screen active">
-          <div class="breadcrumb">Autenticação</div>
-          <div class="form-box" style="max-width: 420px; margin: 0 auto;">
-            <div class="form-header">Entrar</div>
+        <section id="login" class="screen auth-screen active">
+          <div class="form-box auth-box">
+            <div class="auth-heading">
+              <span class="auth-eyebrow">ACESSO À PLATAFORMA</span>
+              <h1>Bem-vindo de volta</h1>
+              <p>Entre para continuar organizando seus espaços.</p>
+            </div>
             <form id="form-login">
               <div class="form-group">
                 <label for="login-email">Email:</label>
-                <input type="email" id="login-email" name="email" required />
+                <input
+                  type="email"
+                  id="login-email"
+                  name="email"
+                  autocomplete="email"
+                  placeholder="voce@exemplo.com"
+                  required
+                />
               </div>
               <div class="form-group">
                 <label for="login-password">Senha:</label>
-                <input type="password" id="login-password" name="password" minlength="6" maxlength="128" required />
+                <input
+                  type="password"
+                  id="login-password"
+                  name="password"
+                  autocomplete="current-password"
+                  placeholder="Digite sua senha"
+                  minlength="6"
+                  maxlength="128"
+                  required
+                />
               </div>
-              <div style="display: flex; justify-content: space-between; gap: 10px;">
-                <button type="button" class="btn btn-secondary" id="btn-show-register">Criar conta</button>
+              <div class="auth-actions">
                 <button type="submit" class="btn btn-solicitar">Entrar</button>
+                <button type="button" class="btn btn-secondary" id="btn-show-register">Criar conta</button>
               </div>
             </form>
           </div>
         </section>
 
-        <section id="register" class="screen">
-          <div class="breadcrumb">Autenticação</div>
-          <div class="form-box" style="max-width: 420px; margin: 0 auto;">
+        <section id="register" class="screen auth-screen">
+          <div class="form-box auth-box">
             <div class="form-header">Cadastro</div>
             <form id="form-register">
               <div class="form-group">
@@ -135,8 +156,8 @@
 
         <section id="solicitar" class="screen">
           <div class="breadcrumb">Usuário > Solicitar</div>
-          <div class="form-box">
-            <div class="form-header">SOLICITAR SALA</div>
+          <div class="form-box request-box">
+            <div class="form-header request-header">Solicitar sala</div>
             <form id="form-solicitacao">
               <div class="form-group">
                 <label>Escolher sala: *</label>
@@ -144,7 +165,7 @@
                   <option value="">Selecione...</option>
                 </select>
               </div>
-              <div class="form-row">
+              <div class="form-row request-row">
                 <div class="form-group">
                   <label>Data: *</label
                   ><input type="date" id="campo-data" required />
@@ -162,11 +183,11 @@
                   id="campo-finalidade"
                   maxlength="800"
                 ></textarea>
-                <div style="text-align: right; font-size: 0.8rem; color: #999">
+                <div class="request-counter">
                   <span id="contador">0</span>/800
                 </div>
               </div>
-              <div style="display: flex; justify-content: flex-end; gap: 10px">
+              <div class="request-actions">
                 <button
                   type="button"
                   class="btn btn-secondary"
@@ -240,6 +261,30 @@
               "
             >
               Nenhuma sala solicitada ainda.
+            </div>
+          </div>
+        </section>
+
+        <section id="admin" class="screen">
+          <div class="breadcrumb">Administrador &gt; Solicitações</div>
+          <div style="background: white; padding: 20px; border-radius: 5px; border: 1px solid #ddd">
+            <h3 style="margin-bottom: 20px; color: var(--primary-color)">Solicitações de salas</h3>
+            <table id="tabela-admin">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Sala</th>
+                  <th>Data</th>
+                  <th>Horário</th>
+                  <th>Finalidade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="msg-admin-vazio" style="text-align: center; padding: 20px; color: #777; display: none;">
+              Nenhuma solicitação encontrada.
             </div>
           </div>
         </section>

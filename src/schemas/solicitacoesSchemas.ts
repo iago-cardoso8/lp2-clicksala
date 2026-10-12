@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+function normalizeDate(value: string) {
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : value;
+}
+
 const dateSchema = z.string().superRefine((value, context) => {
   const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$|^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) {
@@ -15,7 +20,7 @@ const dateSchema = z.string().superRefine((value, context) => {
   if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) {
     context.addIssue({ code: 'custom', message: 'Data inválida.' });
   }
-});
+}).transform(normalizeDate);
 
 const timeSchema = z.string().superRefine((value, context) => {
   const match = value.match(/^(\d{2}):(\d{2}) - (\d{2}):(\d{2})$/);
@@ -68,6 +73,19 @@ export const createSolicitacaoSchema = z.object({
       message: 'Sala é obrigatória.',
     });
   }
+
+  const [day, month, year] = data.data.split('/').map(Number);
+  const requestedDate = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const today = new Date();
+  const todayDate = `${String(today.getFullYear()).padStart(4, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  if (requestedDate < todayDate) {
+    context.addIssue({
+      code: 'custom',
+      path: ['data'],
+      message: 'Não é permitido solicitar uma sala em uma data passada.',
+    });
+  }
 });
 
 export const updateSolicitacaoSchema = z.object({
@@ -80,4 +98,12 @@ export const deleteSolicitacaoBodySchema = z.object({
   cod_sala: roomIdSchema,
   data: dateSchema,
   hora: timeSchema,
+}).strict();
+
+export const adminListSchema = z.object({
+  status: z.enum(['Pendente', 'Aprovado', 'Rejeitado', 'Cancelado']).optional(),
+});
+
+export const adminDecisionSchema = z.object({
+  status: z.enum(['Aprovado', 'Rejeitado'], { message: 'Status inválido.' }),
 }).strict();

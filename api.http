@@ -133,7 +133,7 @@ Authorization: Bearer {{login.response.body.$.token}}
 
 {
   "sala": "SALA 1",
-  "data": "2026-05-01",
+  "data": "01/05/2026",
   "hora": "14:00 - 14:50",
   "finalidade": "Reunião de projeto"
 }
@@ -145,7 +145,7 @@ Authorization: Bearer {{login.response.body.$.token}}
 
 {
   "cod_sala": 99999,
-  "data": "2026-05-01",
+  "data": "01/05/2026",
   "hora": "14:00 - 14:50",
   "finalidade": "Teste"
 }
@@ -175,11 +175,11 @@ Authorization: Bearer {{login.response.body.$.token}}
 }
 
 ### Buscar uma solicitação por chave
-GET {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
+GET {{server}}/solicitacoes/1/01%2F05%2F2026/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Parâmetro de rota inválido: cod_sala não é um inteiro positivo (esperado: 400)
-GET {{server}}/solicitacoes/abc/2026-05-01/14:00%20-%2014:50
+GET {{server}}/solicitacoes/abc/01%2F05%2F2026/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Parâmetro de rota inválido: data inexistente (esperado: 400)
@@ -187,7 +187,7 @@ GET {{server}}/solicitacoes/1/31%2F02%2F2026/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Atualizar status de uma solicitação
-PUT {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
+PUT {{server}}/solicitacoes/1/01%2F05%2F2026/14:00%20-%2014:50
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.$.token}}
 
@@ -196,7 +196,7 @@ Authorization: Bearer {{login.response.body.$.token}}
 }
 
 ### Deletar uma solicitação
-DELETE {{server}}/solicitacoes/1/2026-05-01/14:00%20-%2014:50
+DELETE {{server}}/solicitacoes/1/01%2F05%2F2026/14:00%20-%2014:50
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Logout e limpeza do cookie HttpOnly
@@ -204,3 +204,49 @@ POST {{server}}/auth/logout
 Content-Type: application/json
 
 {}
+
+### ADMIN: login
+# @name loginAdmin
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@clicksala.com",
+  "password": "admin123"
+}
+
+### ADMIN: login como usuário comum
+# @name loginUsuario
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@clicksala.com",
+  "password": "password123"
+}
+
+### ADMIN: usuário comum tentando acessar (esperado: 403)
+GET {{server}}/admin/solicitacoes
+Authorization: Bearer {{loginUsuario.response.body.token}}
+
+### ADMIN: listar pendentes (esperado: 200)
+GET {{server}}/admin/solicitacoes?status=Pendente
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+### ADMIN: aprovar (esperado: 200)
+PUT {{server}}/admin/solicitacoes/1/01%2F10%2F2026/14:40%20-%2015:30
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+{
+  "status": "Aprovado"
+}
+
+### ADMIN: aprovar de novo (esperado: 404, já não está pendente)
+PUT {{server}}/admin/solicitacoes/1/01%2F10%2F2026/14:40%20-%2015:30
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+{
+  "status": "Aprovado"
+}

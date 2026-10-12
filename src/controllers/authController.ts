@@ -64,7 +64,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const token = createToken({ sub: String(user.id), nome: user.nome, email: user.email });
     setAuthCookie(res, token);
     res.json({ 
-      user: { id: user.id, nome: user.nome, email: user.email }, 
+      user: { id: user.id, nome: user.nome, email: user.email, role: user.role },
       token 
     });
   } catch (error) {
@@ -85,7 +85,7 @@ export async function me(req: Request, res: Response, next: NextFunction) {
       throw new HttpError(404, 'Usuário não encontrado.');
     }
 
-    res.json({ id: user.id, nome: user.nome, email: user.email });
+    res.json({ id: user.id, nome: user.nome, email: user.email, role: user.role });
   } catch (error) {
     next(error);
   }

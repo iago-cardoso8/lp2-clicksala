@@ -5,6 +5,13 @@
       "nome": "Usuario Teste",
       "email": "teste@clicksala.com",
       "senha": "password123"
+    },
+    {
+      "id": 2,
+      "nome": "Administrador",
+      "email": "admin@clicksala.com",
+      "senha": "admin123",
+      "role": "admin"
     }
   ],
   "salas": [

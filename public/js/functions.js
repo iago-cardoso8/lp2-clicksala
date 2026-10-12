@@ -129,10 +129,82 @@ export function showScreen(screenId) {
     document.getElementById("menu-minhas-salas").classList.add("active");
     carregarSolicitacoes();
   } else if (screenId === "solicitar") {
+    setMinDateOnForm();
     document.getElementById("menu-solicitar").classList.add("active");
+  } else if (screenId === "admin") {
+    document.getElementById("menu-admin").classList.add("active");
+    carregarAdmin();
   }
 }
 
+export async function carregarAdmin() {
+  try {
+    const res = await fetch('/admin/solicitacoes', { headers: createAuthHeaders() });
+    if (!res.ok) {
+      throw new Error(await getApiError(res, 'Erro ao buscar solicitações.'));
+    }
+    renderTabelaAdmin(await res.json());
+  } catch (erro) {
+    console.error(erro);
+    showToast(erro.message || 'Erro ao buscar solicitações.');
+  }
+}
+
+function renderTabelaAdmin(lista) {
+  const tbody = document.querySelector('#tabela-admin tbody');
+  const msg = document.getElementById('msg-admin-vazio');
+  tbody.innerHTML = '';
+  msg.style.display = lista.length ? 'none' : 'block';
+
+  lista.forEach((item) => {
+    const sala = listaSalas.find((s) => s.id === item.cod_sala);
+    const nomeSala = sala ? `${sala.nome} - ${sala.bloco}` : `Sala ${item.cod_sala}`;
+    const statusClass = {
+      Pendente: 'status-pendente',
+      Aprovado: 'status-aprovado',
+      Rejeitado: 'status-rejeitado',
+    }[item.status] || 'status-cancelado';
+
+    const dados = `data-cod-sala="${escapeHtml(item.cod_sala)}" data-data="${escapeHtml(item.data)}" data-hora="${escapeHtml(item.hora)}"`;
+    const acoes = item.status === 'Pendente'
+      ? `<button class="btn btn-solicitar" data-decisao="Aprovado" ${dados}>Aprovar</button>
+         <button class="btn btn-danger" data-decisao="Rejeitado" ${dados}>Rejeitar</button>`
+      : '---';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(item.usuario?.nome ?? '')}</td>
+      <td>${escapeHtml(nomeSala)}</td>
+      <td>${escapeHtml(item.data)}</td>
+      <td>${escapeHtml(item.hora)}</td>
+      <td>${escapeHtml(item.finalidade)}</td>
+      <td><span class="status-badge ${statusClass}">${escapeHtml(item.status)}</span></td>
+      <td class="actions-cell">${acoes}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function decidirSolicitacao(cod_sala, data, hora, status) {
+  try {
+    const url = `/admin/solicitacoes/${encodeURIComponent(cod_sala)}/${encodeURIComponent(data)}/${encodeURIComponent(hora)}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!res.ok) {
+      throw new Error(await getApiError(res, 'Erro ao atualizar solicitação.'));
+    }
+
+    showToast(`Solicitação ${status.toLowerCase()} com sucesso!`, 'success');
+    carregarAdmin();
+  } catch (erro) {
+    console.error(erro);
+    showToast(erro.message || 'Erro ao atualizar solicitação.');
+  }
+}
 
 function filtrarSalas() {
   const termo = document
@@ -240,10 +312,11 @@ export function atualizarListaMinhasSalas(lista) {
     const sala = listaSalas.find(s => s.id === item.cod_sala);
     const nomeSala = sala ? `${sala.nome} - ${sala.bloco}` : `Sala ${item.cod_sala}`;
 
-    let statusClass =
-      item.status === "Pendente"
-        ? "status-pendente"
-        : "status-cancelado";
+    let statusClass = {
+      Pendente: "status-pendente",
+      Aprovado: "status-aprovado",
+      Rejeitado: "status-rejeitado",
+    }[item.status] || "status-cancelado";
     let actionButton = "";
 
 
@@ -399,6 +472,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = btn.dataset.data;
     const hora = btn.dataset.hora;
     cancelarAgendamento(codSala, data, hora);
+  });
+
+  document.querySelector("#tabela-admin").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-decisao]");
+    if (!btn) return;
+    decidirSolicitacao(btn.dataset.codSala, btn.dataset.data, btn.dataset.hora, btn.dataset.decisao);
   });
 });
 

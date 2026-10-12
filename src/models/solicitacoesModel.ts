@@ -81,7 +81,7 @@ export async function read(field?: string, value?: string, id_user?: number): Pr
       const codSala = Number(value);
       where.cod_sala = Number.isNaN(codSala) ? -1 : codSala;
     } else {
-      where[field] = { contains: value, mode: 'insensitive' };
+      where[field] = { contains: value };
     }
   }
 
@@ -89,10 +89,9 @@ export async function read(field?: string, value?: string, id_user?: number): Pr
     where.id_user = id_user;
   }
 
-  const result = await prisma.solicitacao.findMany({
-    where,
-    orderBy: [{ data: 'asc' }, { hora: 'asc' }],
-  });
+  const result = await prisma.solicitacao.findMany({ where });
+  const toKey = (d: string) => d.split('/').reverse().join('-');
+  result.sort((a, b) => toKey(a.data).localeCompare(toKey(b.data)) || a.hora.localeCompare(b.hora));
 
   return result.map(normalizeSolicitacao);
 }
@@ -158,4 +157,35 @@ export async function remove(cod_sala: number | string, data: string, hora: stri
   return true;
 }
 
-export default { getSalas, create, read, readByKey, update, remove };
+export async function readAll(status?: string) {
+  const result = await prisma.solicitacao.findMany({
+    where: status ? { status } : {},
+    include: { usuario: { select: { nome: true, email: true } } },
+  });
+
+  const toKey = (d: string) => d.split('/').reverse().join('-');
+  result.sort((a, b) => toKey(a.data).localeCompare(toKey(b.data)) || a.hora.localeCompare(b.hora));
+
+  return result.map(({ usuario, ...rest }) => ({ ...normalizeSolicitacao(rest), usuario }));
+}
+
+export async function updateStatusAdmin(cod_sala: number | string, data: string, hora: string, status: string) {
+  const where = { cod_sala: Number(cod_sala), data, hora };
+
+  const updated = await prisma.solicitacao.updateMany({
+    where: { ...where, status: 'Pendente' },
+    data: { status },
+  });
+
+  if (updated.count === 0) {
+    throw new Error('Solicitação pendente não encontrada');
+  }
+
+  const solicitacao = await prisma.solicitacao.findFirst({ where });
+  if (!solicitacao) {
+    throw new Error('Solicitação pendente não encontrada');
+  }
+  return normalizeSolicitacao(solicitacao);
+}
+
+export default { getSalas, create, read, readByKey, update, remove, readAll, updateStatusAdmin };
