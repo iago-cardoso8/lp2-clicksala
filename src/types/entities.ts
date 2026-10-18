@@ -14,6 +14,7 @@ export interface User {
 }
 
 export interface Solicitacao {
+  id: number;
   cod_sala: number | string;
   data: string;
   hora: string;

@@ -46,7 +46,8 @@ export function verifyToken(token: string): { exp: number; sub: string } | null
 - Valida o token JWT em cada requisição protegida
 - Extrai o user ID do token e o armazena no objeto `request`
 - Retorna erro 401 se o token for inválido ou ausente
-- Formato esperado: `Authorization: Bearer <token>`
+- Aceita o cookie `clicksala_token` (HttpOnly, SameSite=Lax) ou `Authorization: Bearer <token>`
+- O cookie é definido no login e removido no logout
 
 ### 4. **Validações de Segurança**
 
@@ -58,12 +59,17 @@ Implementa validações para:
 - **Nome:** Mínimo 3 caracteres, máximo 100 caracteres
 - **Email Case-Insensitive:** Emails são armazenados em minúsculas para evitar duplicatas
 
-**Funções de validação:**
-```typescript
-validatePasswordStrength(password: string)
-validateEmail(email: string)
-validateName(name: string)
-```
+As regras são aplicadas pelos schemas Zod em `src/config/security.ts` e `src/schemas`.
+
+Solicitações também validam, no servidor, blocos oficiais, domingos, horários encerrados e aulas fixas. O limitador de login considera falhas por combinação de IP e e-mail e remove entradas expiradas a cada requisição.
+
+### Papel administrativo
+
+O middleware `src/middlewares/requireAdmin.ts` protege as rotas administrativas e exige `role: "admin"`. As contas de exemplo definidas em `src/database/seeders.json` só são inseridas fora de produção.
+
+### Banco SQLite
+
+Ao iniciar, `src/database/migration.ts` migra uma tabela `solicitacao` legada sem coluna `id`: renomeia a tabela, copia os dados para a nova estrutura e remove a tabela temporária dentro de uma transação. Faça backup do arquivo `src/database/db.sqlite` antes de atualizar. Se preferir recriar um banco de desenvolvimento, pare o servidor, apague esse arquivo e inicie novamente; não faça isso em produção.
 
 ## 🔄 Fluxo de Autenticação
 
@@ -193,15 +199,13 @@ curl -X GET http://localhost:3000/auth/me \
   -H "Authorization: Bearer seu_token_jwt_aqui"
 ```
 
-## 🚀 Próximos Passos Recomendados
+## Próximos passos recomendados
 
-1. **Rate Limiting:** Implementar limite de tentativas de login
-2. **Refresh Tokens:** Adicionar tokens de refresh para melhor segurança
-3. **2FA (Two-Factor Authentication):** Adicionar autenticação de dois fatores
-4. **Auditoria:** Registrar todas as ações de autenticação
-5. **Logout:** Implementar blacklist de tokens expirados
-6. **HTTPS:** Garantir que toda comunicação seja via HTTPS em produção
-7. **CORS:** Configurar CORS adequadamente em produção
+1. **Refresh Tokens:** Adicionar tokens de refresh para melhor segurança
+2. **2FA:** Adicionar autenticação de dois fatores
+3. **Auditoria:** Registrar ações administrativas e de autenticação
+4. **HTTPS:** Garantir que toda comunicação seja via HTTPS em produção
+5. **CORS:** Configurar CORS adequadamente em produção
 
 ## 📚 Referências
 

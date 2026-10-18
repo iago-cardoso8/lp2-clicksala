@@ -6,6 +6,7 @@ import {
 	createSolicitacaoSchema,
 	deleteSolicitacaoBodySchema,
 	listSolicitacoesSchema,
+	ocupadosQuerySchema,
 	solicitacaoParamsSchema,
 	updateSolicitacaoSchema,
 } from '../schemas/solicitacoesSchemas.js';
@@ -16,6 +17,7 @@ router.get('/salas', controllers.getSalas);
 
 router.use(authMiddleware);
 router.get('/', validate(listSolicitacoesSchema, 'query'), controllers.list);
+router.get('/ocupados', validate(ocupadosQuerySchema, 'query'), controllers.getOcupados);
 router.get('/:cod_sala/:data/:hora', validate(solicitacaoParamsSchema, 'params'), controllers.getByKey);
 router.post('/', validate(createSolicitacaoSchema, 'body'), controllers.create);
 router.put('/:cod_sala/:data/:hora', validate(solicitacaoParamsSchema, 'params'), validate(updateSolicitacaoSchema, 'body'), controllers.update);

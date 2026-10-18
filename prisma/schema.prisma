@@ -38,6 +38,7 @@ model Sala {
 }
 
 model Solicitacao {
+  id         Int     @id @default(autoincrement())
   cod_sala   Int
   data       String
   hora       String
@@ -47,5 +48,5 @@ model Solicitacao {
   sala       Sala    @relation(fields: [cod_sala], references: [id], onDelete: Cascade, onUpdate: Cascade)
   usuario    Usuario @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@id([cod_sala, data, hora])
+  @@index([cod_sala, data, hora], map: "solicitacao_horario_idx")
 }

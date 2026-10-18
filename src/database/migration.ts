@@ -31,8 +31,10 @@ async function up() {
     )
   `);
 
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS solicitacao (
+  const solicitacaoColumns = await prisma.$queryRawUnsafe<Array<{ name: string }>>('PRAGMA table_info(solicitacao)');
+  const createSolicitacaoTable = `
+    CREATE TABLE solicitacao (
+      id integer primary key autoincrement,
       cod_sala integer not null,
       data TEXT NOT NULL,
       hora TEXT NOT NULL,
@@ -42,9 +44,37 @@ async function up() {
       foreign key (cod_sala) references sala(id)
         on delete cascade on update cascade,
       foreign key (id_user) references usuario(id)
-        on delete cascade on update cascade,
-      primary key (cod_sala, data, hora)
+        on delete cascade on update cascade
     )
+  `;
+
+  if (solicitacaoColumns.length === 0) {
+    await prisma.$executeRawUnsafe(createSolicitacaoTable);
+  } else if (!solicitacaoColumns.some((column) => column.name === 'id')) {
+    await prisma.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe('ALTER TABLE solicitacao RENAME TO solicitacao_legacy');
+      await transaction.$executeRawUnsafe(createSolicitacaoTable);
+      await transaction.$executeRawUnsafe(`
+        INSERT INTO solicitacao (cod_sala, data, hora, finalidade, status, id_user)
+        SELECT cod_sala, data, hora, finalidade, status, id_user
+        FROM solicitacao_legacy
+      `);
+      await transaction.$executeRawUnsafe('DROP TABLE solicitacao_legacy');
+    });
+  }
+
+  await prisma.$executeRawUnsafe(
+    'CREATE INDEX IF NOT EXISTS solicitacao_horario_idx ON solicitacao (cod_sala, data, hora)'
+  );
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS solicitacao_ativa_usuario_horario_idx
+    ON solicitacao (cod_sala, data, hora, id_user)
+    WHERE status IN ('Pendente', 'Aprovado')
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS solicitacao_horario_aprovado_idx
+    ON solicitacao (cod_sala, data, hora)
+    WHERE status = 'Aprovado'
   `);
 
   await prisma.$executeRawUnsafe(`

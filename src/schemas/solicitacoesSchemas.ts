@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BLOCOS_HORARIOS } from '../config/horarios.js';
 
 function normalizeDate(value: string) {
   const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -53,6 +54,10 @@ export const listSolicitacoesSchema = z.object({
   }
 });
 
+export const ocupadosQuerySchema = z.object({
+  cod_sala: roomIdSchema,
+}).strict();
+
 export const solicitacaoParamsSchema = z.object({
   cod_sala: roomIdSchema,
   data: dateSchema,
@@ -86,12 +91,36 @@ export const createSolicitacaoSchema = z.object({
       message: 'Não é permitido solicitar uma sala em uma data passada.',
     });
   }
+
+  if (new Date(year, month - 1, day).getDay() === 0) {
+    context.addIssue({
+      code: 'custom',
+      path: ['data'],
+      message: 'Não é permitido solicitar uma sala aos domingos.',
+    });
+  }
+
+  if (!BLOCOS_HORARIOS.includes(data.hora as (typeof BLOCOS_HORARIOS)[number])) {
+    context.addIssue({
+      code: 'custom',
+      path: ['hora'],
+      message: 'Horário não está entre os blocos disponíveis.',
+    });
+  } else if (requestedDate === todayDate) {
+    const [horaFinal, minutoFinal] = data.hora.split(' - ')[1].split(':').map(Number);
+    const agora = new Date();
+    if (horaFinal * 60 + minutoFinal <= agora.getHours() * 60 + agora.getMinutes()) {
+      context.addIssue({
+        code: 'custom',
+        path: ['hora'],
+        message: 'Não é permitido solicitar um horário que já terminou.',
+      });
+    }
+  }
 });
 
 export const updateSolicitacaoSchema = z.object({
-  status: z.enum(['Pendente', 'Aprovado', 'Cancelado'], {
-    message: 'Status inválido.',
-  }),
+  status: z.literal('Cancelado', { message: 'Usuários só podem cancelar suas solicitações.' }),
 }).strict();
 
 export const deleteSolicitacaoBodySchema = z.object({
@@ -105,5 +134,6 @@ export const adminListSchema = z.object({
 });
 
 export const adminDecisionSchema = z.object({
+  id: z.coerce.number().int().positive('Solicitação inválida.'),
   status: z.enum(['Aprovado', 'Rejeitado'], { message: 'Status inválido.' }),
 }).strict();

@@ -3,6 +3,9 @@ import { horariosBaseOcupados, blocosHorarios, diasSemana } from './dados.js'
 import { createAuthHeaders } from './auth.js';
 
 let listaSalas = [];
+let salaDetalheSelecionada = null;
+let deslocamentoSemana = 0;
+let solicitacoesAprovadasSala = [];
 const BASE_URL = '/solicitacoes';
 
 export function showToast(message, type = 'error') {
@@ -144,6 +147,9 @@ export async function carregarAdmin() {
       throw new Error(await getApiError(res, 'Erro ao buscar solicitações.'));
     }
     renderTabelaAdmin(await res.json());
+    if (document.getElementById('detalhe-sala').classList.contains('active')) {
+      await carregarGradeAprovados();
+    }
   } catch (erro) {
     console.error(erro);
     showToast(erro.message || 'Erro ao buscar solicitações.');
@@ -165,7 +171,7 @@ function renderTabelaAdmin(lista) {
       Rejeitado: 'status-rejeitado',
     }[item.status] || 'status-cancelado';
 
-    const dados = `data-cod-sala="${escapeHtml(item.cod_sala)}" data-data="${escapeHtml(item.data)}" data-hora="${escapeHtml(item.hora)}"`;
+    const dados = `data-id="${escapeHtml(item.id)}" data-cod-sala="${escapeHtml(item.cod_sala)}" data-data="${escapeHtml(item.data)}" data-hora="${escapeHtml(item.hora)}"`;
     const acoes = item.status === 'Pendente'
       ? `<button class="btn btn-solicitar" data-decisao="Aprovado" ${dados}>Aprovar</button>
          <button class="btn btn-danger" data-decisao="Rejeitado" ${dados}>Rejeitar</button>`
@@ -185,13 +191,13 @@ function renderTabelaAdmin(lista) {
   });
 }
 
-async function decidirSolicitacao(cod_sala, data, hora, status) {
+async function decidirSolicitacao(id, cod_sala, data, hora, status) {
   try {
     const url = `/admin/solicitacoes/${encodeURIComponent(cod_sala)}/${encodeURIComponent(data)}/${encodeURIComponent(hora)}`;
     const res = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ id, status }),
     });
 
     if (!res.ok) {
@@ -199,7 +205,8 @@ async function decidirSolicitacao(cod_sala, data, hora, status) {
     }
 
     showToast(`Solicitação ${status.toLowerCase()} com sucesso!`, 'success');
-    carregarAdmin();
+    await carregarAdmin();
+    if (status === 'Aprovado') await carregarGradeAprovados();
   } catch (erro) {
     console.error(erro);
     showToast(erro.message || 'Erro ao atualizar solicitação.');
@@ -220,43 +227,88 @@ function filtrarSalas() {
 }
 
 
-function verDetalhesSala(nomeSala) {
+async function verDetalhesSala(nomeSala) {
   showScreen("detalhe-sala");
   document.getElementById("titulo-detalhe-sala").innerText = nomeSala;
   document.getElementById("sala-exibida").innerText = nomeSala;
+  const sala = listaSalas.find((item) => `${item.nome} - ${item.bloco}` === nomeSala);
+  salaDetalheSelecionada = sala ? { id: sala.id, nome: nomeSala } : null;
+  deslocamentoSemana = 0;
   const btn = document.getElementById("btn-solicitar-interno");
-  btn.onclick = null;
-  btn.addEventListener("click", () => {
-    solicitarSala(nomeSala);
+  btn.onclick = () => solicitarSala(nomeSala);
+  await carregarGradeAprovados();
+}
+
+function formatarDataLocal(data) {
+  return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`;
+}
+
+function obterDiasSemana(offset = deslocamentoSemana) {
+  const hoje = new Date();
+  const segunda = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  segunda.setDate(segunda.getDate() - ((segunda.getDay() + 6) % 7) + offset * 7);
+  return Array.from({ length: 5 }, (_, index) => {
+    const dia = new Date(segunda);
+    dia.setDate(segunda.getDate() + index);
+    return dia;
   });
+}
 
+function renderizarGradeSala() {
+  if (!salaDetalheSelecionada) return;
 
+  const dias = obterDiasSemana();
   const gradeContainer = document.getElementById("grade-horarios");
-  let html = `
-         <div class="schedule-header">HORÁRIOS</div>
-        ${diasSemana
-      .map((dia) => `<div class="schedule-header">${escapeHtml(dia)}</div>`)
-      .join("")}
-     `;
+  const rotuloSemana = document.getElementById('semana-atual');
+  rotuloSemana.textContent = `${formatarDataLocal(dias[0])} a ${formatarDataLocal(dias[4])}`;
+
+  let html = '<div class="schedule-header">HORÁRIOS</div>';
+  html += dias.map((data) => {
+    const nomeDia = diasSemana[data.getDay() - 1];
+    return `<div class="schedule-header">${escapeHtml(nomeDia)}<br>${escapeHtml(formatarDataLocal(data))}</div>`;
+  }).join('');
+
   blocosHorarios.forEach((blocoHora) => {
     html += `<div class="schedule-cell time-col">${escapeHtml(blocoHora)}</div>`;
-
-
-    diasSemana.forEach((dia) => {
-      const isReservedBase = horariosBaseOcupados.some(
-        (reserva) =>
-          reserva.sala === nomeSala &&
-          reserva.diaSemana === dia &&
-          reserva.hora === blocoHora
+    dias.forEach((data) => {
+      const dataFormatada = formatarDataLocal(data);
+      const nomeDia = diasSemana[data.getDay() - 1];
+      const isReservedBase = horariosBaseOcupados.some((reserva) =>
+        reserva.sala === salaDetalheSelecionada.nome &&
+        reserva.diaSemana === nomeDia &&
+        reserva.hora === blocoHora
       );
-      if (isReservedBase) {
-        html += '<div class="schedule-cell reserved-slot" title="Horário Ocupado">Ocupado</div>';
-      } else {
-        html += '<div class="schedule-cell" title="Horário Disponível">Disponível</div>';
-      }
+      const isApproved = solicitacoesAprovadasSala.some((solicitacao) =>
+        solicitacao.data === dataFormatada && solicitacao.hora === blocoHora
+      );
+      const isOccupied = isReservedBase || isApproved;
+      html += isOccupied
+        ? '<div class="schedule-cell reserved-slot" title="Horário Ocupado">Ocupado</div>'
+        : '<div class="schedule-cell" title="Horário Disponível">Disponível</div>';
     });
   });
+
   gradeContainer.innerHTML = html;
+}
+
+async function carregarGradeAprovados() {
+  if (!salaDetalheSelecionada) return;
+
+  try {
+    const response = await fetch(`${BASE_URL}/ocupados?cod_sala=${encodeURIComponent(salaDetalheSelecionada.id)}`, {
+      headers: createAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error(await getApiError(response, 'Erro ao buscar horários ocupados.'));
+    }
+    solicitacoesAprovadasSala = await response.json();
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || 'Erro ao buscar horários ocupados.');
+    solicitacoesAprovadasSala = [];
+  }
+
+  renderizarGradeSala();
 }
 
 
@@ -373,15 +425,19 @@ function formatarData(dataISO) {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
+function diaDaSemana(dataISO) {
+  const nomes = ["DOMINGO", "SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA", "SÁBADO"];
+  return nomes[new Date(`${dataISO}T00:00:00`).getDay()];
+}
 
-function preencherHorarios() {
+
+async function preencherHorarios() {
     const selectHora = document.getElementById("campo-hora");
     const campoData = document.getElementById("campo-data");
     const dataISO = campoData.value;
 
     if (dataISO) {
-        const diasSemana = ["DOMINGO", "SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA", "SÁBADO"];
-        const diaSemana = diasSemana[new Date(dataISO + "T00:00:00").getDay()];
+      const diaSemana = diaDaSemana(dataISO);
         
         if (diaSemana === "DOMINGO") {
             alert("Não é permitido agendar aos domingos.");
@@ -409,6 +465,19 @@ function preencherHorarios() {
     const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
     const dataSelecSemHora = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate());
 
+    const salaSelecionada = listaSalas.find((sala) => `${sala.nome} - ${sala.bloco}` === document.getElementById('campo-sala').value);
+    let horariosAprovados = [];
+    if (salaSelecionada) {
+      try {
+        const response = await fetch(`${BASE_URL}/ocupados?cod_sala=${encodeURIComponent(salaSelecionada.id)}`, {
+          headers: createAuthHeaders(),
+        });
+        if (response.ok) horariosAprovados = await response.json();
+      } catch (error) {
+        console.error('Erro ao buscar horários aprovados:', error);
+      }
+    }
+
     blocosHorarios.forEach((hora) => {
         const horaFinal = hora.split(" - ")[1];
         const [horaH, minH] = horaFinal.split(":").map(Number);
@@ -416,6 +485,12 @@ function preencherHorarios() {
 
         if (dataSelecSemHora.getTime() === hojeSemHora.getTime() && dataHoraFinal <= hoje) {
             return;
+        }
+
+        if (horariosAprovados.some((solicitacao) =>
+          solicitacao.data === formatarData(dataISO) && solicitacao.hora === hora
+        )) {
+          return;
         }
 
         const option = document.createElement("option");
@@ -430,6 +505,15 @@ function preencherHorarios() {
 document.addEventListener("DOMContentLoaded", () => {
   const campoData = document.getElementById("campo-data");
   campoData.addEventListener("change", preencherHorarios);
+  document.getElementById('campo-sala').addEventListener('change', preencherHorarios);
+  document.getElementById('semana-anterior').addEventListener('click', () => {
+    deslocamentoSemana -= 1;
+    renderizarGradeSala();
+  });
+  document.getElementById('proxima-semana').addEventListener('click', () => {
+    deslocamentoSemana += 1;
+    renderizarGradeSala();
+  });
   document.getElementById("btn-limpar")
     .addEventListener("click", limparFormulario);
   document.getElementById("input-pesquisa-salas")
@@ -477,7 +561,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#tabela-admin").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-decisao]");
     if (!btn) return;
-    decidirSolicitacao(btn.dataset.codSala, btn.dataset.data, btn.dataset.hora, btn.dataset.decisao);
+    decidirSolicitacao(btn.dataset.id, btn.dataset.codSala, btn.dataset.data, btn.dataset.hora, btn.dataset.decisao);
   });
 });
 
@@ -521,26 +605,26 @@ document.getElementById("form-solicitacao")
       const agendamentos = await res.json();
       const conflitoUsuario = agendamentos.some(
         (agendamento) =>
+          agendamento.cod_sala === sala.id &&
           agendamento.data === dataFormatada &&
           agendamento.hora === hora &&
-          agendamento.status === "Pendente"
+          ["Pendente", "Aprovado"].includes(agendamento.status)
       );
 
 
       if (conflitoUsuario) {
-        showToast("Você já possui um agendamento neste dia e horário.");
+        showToast("Você já solicitou este horário.");
         return;
       }
 
 
-      const mapaDias = ["DOMINGO", "SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA", "SÁBADO"];
-      const diaDaSemana = mapaDias[new Date(dataISO).getDay()];
+      const dia = diaDaSemana(dataISO);
 
 
       const conflitoBase = horariosBaseOcupados.some(
         (reserva) =>
           reserva.sala === salaNome &&
-          reserva.diaSemana === diaDaSemana &&
+          reserva.diaSemana === dia &&
           reserva.hora === hora
       );
 

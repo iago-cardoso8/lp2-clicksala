@@ -27,6 +27,15 @@ export async function getSalas(req: Request, res: Response, next: NextFunction) 
   }
 }
 
+export async function getOcupados(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cod_sala } = req.query as unknown as { cod_sala: number };
+    res.json(await solicitacoesModel.readApprovedForRoom(cod_sala));
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getByKey(req: Request, res: Response, next: NextFunction) {
   try {
     const { cod_sala, data, hora } = req.params as unknown as { cod_sala: number; data: string; hora: string };
@@ -77,6 +86,10 @@ export async function create(req: Request, res: Response, next: NextFunction) {
     const salaExiste = salas.some((item) => item.id === Number(normalizedCodSala));
     if (!salaExiste) {
       throw new HttpError(404, 'Sala não encontrada.');
+    }
+
+    if (await solicitacoesModel.hasApproved(Number(normalizedCodSala), data, hora)) {
+      throw new HttpError(409, 'Horário já ocupado.');
     }
 
     const novaSolicitacao = await solicitacoesModel.create({
@@ -145,4 +158,4 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export default { list, getSalas, getByKey, create, update, remove };
+export default { list, getSalas, getOcupados, getByKey, create, update, remove };

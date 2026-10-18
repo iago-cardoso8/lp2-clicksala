@@ -7,7 +7,7 @@ import { loginSchema, registerSchema } from '../schemas/authSchemas.js';
 
 const router = Router();
 
-router.post('/register', authRateLimit, validate(registerSchema, 'body'), controllers.register);
+router.post('/register', validate(registerSchema, 'body'), controllers.register);
 router.post('/login', authRateLimit, validate(loginSchema, 'body'), controllers.login);
 router.post('/logout', controllers.logout);
 router.get('/me', authMiddleware, controllers.me);

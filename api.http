@@ -61,7 +61,8 @@ Content-Type: application/json
 
 {
   "email": "{{email}}",
-  "password": "{{password}}"
+  "password": "{{password}}",
+  "tipo": "user"
 }
 
 ### ============================================
@@ -74,7 +75,8 @@ Content-Type: application/json
 
 {
   "email": "{{email}}",
-  "password": "senha-incorreta"
+  "password": "senha-incorreta",
+  "tipo": "user"
 }
 
 ### ============================================
@@ -120,6 +122,10 @@ Authorization: Bearer {{login.response.body.$.token}}
 
 ### Listar salas disponíveis
 GET {{server}}/solicitacoes/salas
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Listar horários aprovados da sala 1 (somente cod_sala, data, hora)
+GET {{server}}/solicitacoes/ocupados?cod_sala=1
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Listar todas as solicitações
@@ -212,7 +218,8 @@ Content-Type: application/json
 
 {
   "email": "admin@clicksala.com",
-  "password": "admin123"
+  "password": "admin123",
+  "tipo": "admin"
 }
 
 ### ADMIN: login como usuário comum
@@ -222,7 +229,18 @@ Content-Type: application/json
 
 {
   "email": "teste@clicksala.com",
-  "password": "password123"
+  "password": "password123",
+  "tipo": "user"
+}
+
+### ADMIN: conta comum selecionada como administrador (esperado: 403)
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@clicksala.com",
+  "password": "password123",
+  "tipo": "admin"
 }
 
 ### ADMIN: usuário comum tentando acessar (esperado: 403)

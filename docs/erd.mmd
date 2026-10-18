@@ -7,11 +7,20 @@ erDiagram
         integer capacidade
         jsonb equipamento
     }
+    USUARIO {
+        integer id PK
+        varchar nome
+        varchar email
+        varchar role
+    }
     SOLICITACAO {
+        integer id PK
         integer cod_sala FK
-        date data PK
-        time hora PK
+        date data
+        time hora
         varchar finalidade
         varchar status
+        integer id_user FK
     }
     SALA ||--o{ SOLICITACAO : "possui"
+    USUARIO ||--o{ SOLICITACAO : "solicita"

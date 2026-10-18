@@ -12,6 +12,10 @@ if (!configuredSecret && process.env.NODE_ENV === 'production') {
 
 export const JWT_SECRET = configuredSecret || randomBytes(32).toString('hex');
 
+if (!configuredSecret) {
+  console.warn('JWT_SECRET não configurado; sessões serão invalidadas ao reiniciar o servidor.');
+}
+
 export const SECURITY_CONFIG = {
   // JWT Configuration
   jwt: {

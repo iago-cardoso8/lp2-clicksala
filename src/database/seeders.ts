@@ -43,7 +43,7 @@ async function up() {
   const file = resolve(__dirname, 'seeders.json');
   const seed = JSON.parse(readFileSync(file, 'utf-8')) as SeedFile;
 
-  if (Array.isArray(seed.usuarios)) {
+  if (process.env.NODE_ENV !== 'production' && Array.isArray(seed.usuarios)) {
     for (const usuario of seed.usuarios) {
       const senha = await hashPassword(usuario.senha);
 
@@ -81,29 +81,25 @@ async function up() {
     }
   }
 
-  for (const solicitacao of seed.solicitacoes) {
-    await prisma.solicitacao.upsert({
-      where: {
-        cod_sala_data_hora: {
-          cod_sala: Number(solicitacao.cod_sala),
-          data: solicitacao.data,
-          hora: solicitacao.hora,
-        },
-      },
-      update: {
-        finalidade: solicitacao.finalidade,
-        status: solicitacao.status,
-        id_user: solicitacao.id_user,
-      },
-      create: {
+  if (process.env.NODE_ENV !== 'production') {
+    for (const solicitacao of seed.solicitacoes) {
+      const where = {
         cod_sala: Number(solicitacao.cod_sala),
         data: solicitacao.data,
         hora: solicitacao.hora,
-        finalidade: solicitacao.finalidade,
-        status: solicitacao.status,
         id_user: solicitacao.id_user,
-      },
-    });
+      };
+      const existing = await prisma.solicitacao.findFirst({ where });
+      if (!existing) {
+        await prisma.solicitacao.create({
+          data: {
+            ...where,
+            finalidade: solicitacao.finalidade,
+            status: solicitacao.status,
+          },
+        });
+      }
+    }
   }
 }
 

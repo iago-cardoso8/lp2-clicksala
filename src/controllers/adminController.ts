@@ -14,8 +14,8 @@ export async function listAll(req: Request, res: Response, next: NextFunction) {
 export async function decide(req: Request, res: Response, next: NextFunction) {
   try {
     const { cod_sala, data, hora } = req.params as unknown as { cod_sala: number; data: string; hora: string };
-    const { status } = req.body;
-    res.json(await solicitacoesModel.updateStatusAdmin(cod_sala, data, hora, status));
+    const { id, status } = req.body;
+    res.json(await solicitacoesModel.updateStatusAdmin(cod_sala, data, hora, id, status));
   } catch (error) {
     if (error instanceof Error && error.message === 'Solicitação pendente não encontrada') {
       next(new HttpError(404, 'Solicitação pendente não encontrada.'));

@@ -45,7 +45,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password } = req.body;
+    const { email, password, tipo } = req.body;
 
     // Buscar usuário por email (case-insensitive)
     const user = await authModel.findByEmail(email.toLowerCase());
@@ -60,11 +60,15 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       throw new HttpError(401, 'Email ou senha inválidos.');
     }
 
+    if (tipo === 'admin' && user.role !== 'admin') {
+      throw new HttpError(403, 'Esta conta não tem permissão de administrador.');
+    }
+
     // Gerar token JWT
     const token = createToken({ sub: String(user.id), nome: user.nome, email: user.email });
     setAuthCookie(res, token);
     res.json({ 
-      user: { id: user.id, nome: user.nome, email: user.email, role: user.role },
+      user: { id: user.id, nome: user.nome, email: user.email, role: tipo === 'admin' ? 'admin' : 'user' },
       token 
     });
   } catch (error) {

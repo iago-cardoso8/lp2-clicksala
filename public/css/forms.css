@@ -60,13 +60,15 @@ textarea {
   font-size: 0.9rem;
   font-weight: 600;
 }
-.auth-box input {
+.auth-box input,
+.auth-box select {
   min-height: 46px;
   border-color: #cbd5cb;
   border-radius: 5px;
   background: #fcfdfb;
 }
-.auth-box input:focus {
+.auth-box input:focus,
+.auth-box select:focus {
   border-color: var(--primary-color);
   outline: 3px solid rgb(46 125 50 / 14%);
 }

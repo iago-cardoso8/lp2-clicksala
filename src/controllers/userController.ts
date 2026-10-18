@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { readFile, unlink } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
 import { prisma } from '../database/prismaClient.js';
 import HttpError from '../errors/HttpError.js';
 
@@ -34,6 +35,7 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
     }
 
     const publicUrl = `/uploads/${req.file.filename}`;
+    const previousImage = await prisma.image.findUnique({ where: { userId } });
 
     await prisma.image.upsert({
       where: { userId },
@@ -51,6 +53,13 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
         userId,
       },
     });
+
+    if (previousImage && previousImage.filename !== req.file.filename) {
+      const previousPath = resolve(process.cwd(), 'public', 'uploads', basename(previousImage.filename));
+      await unlink(previousPath).catch((error) => {
+        console.error('Falha ao remover avatar anterior:', error);
+      });
+    }
 
     return res.status(201).json({
       message: 'Arquivo enviado com sucesso.',

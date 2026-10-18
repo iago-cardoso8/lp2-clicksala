@@ -1,15 +1,10 @@
 import { showScreen, showToast, carregarTabelaSalas, setMinDateOnForm, atualizarListaMinhasSalas, carregarSalas, carregarMinhasSalas } from './functions.js';
-import { setAuthState, clearAuthState, getAuthState, createAuthHeaders, login, register, uploadAvatar } from './auth.js';
+import { setAuthState, clearAuthState, getAuthState, createAuthHeaders, login, register } from './auth.js';
 
 const sidebar = document.getElementById('sidebar');
 const topBarUser = document.querySelector('.user-info');
 const usernameLabel = document.querySelector('.username');
 const btnLogout = document.getElementById('btn-logout');
-const avatarHeader = document.getElementById('avatar-header');
-const imageFile = document.getElementById('image-file');
-const avatarPreview = document.getElementById('avatar-preview');
-const uploadStatus = document.getElementById('upload-status');
-const uploadErrors = document.getElementById('upload-errors');
 function clearFormValidity(form) {
   form.querySelectorAll('input').forEach((input) => input.setCustomValidity(''));
 }
@@ -34,14 +29,6 @@ function updateAuthDisplay() {
   document.getElementById('menu-admin').style.display = user?.role === 'admin' ? 'block' : 'none';
   topBarUser.style.display = loggedIn ? 'flex' : 'none';
   usernameLabel.textContent = user?.nome ?? '';
-
-  if (loggedIn) {
-    const image = localStorage.getItem('clicksala_avatar') || '';
-    if (image) {
-      avatarHeader.src = image;
-      avatarHeader.style.display = 'inline-block';
-    }
-  }
 
   if (!loggedIn) {
     showScreen('login');
@@ -102,9 +89,10 @@ async function handleLogin(event) {
   clearFormValidity(event.currentTarget);
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value.trim();
+  const tipo = document.getElementById('login-tipo').value;
 
   try {
-    const result = await login(email, password);
+    const result = await login(email, password, tipo);
     setAuthState(result.user, result.token);
     updateAuthDisplay();
     await loadApp();
@@ -129,52 +117,6 @@ async function handleRegister(event) {
   }
 }
 
-async function handleAvatarSubmit(event) {
-  event.preventDefault();
-  clearFormValidity(event.currentTarget);
-  const file = imageFile.files?.[0];
-  const errors = [];
-
-  if (!file) {
-    imageFile.setCustomValidity('Escolha uma imagem primeiro.');
-    imageFile.reportValidity();
-    uploadErrors.textContent = 'Escolha uma imagem primeiro.';
-    showToast('Escolha uma imagem primeiro.');
-    return;
-  }
-
-  if (file.size > 2 * 1024 * 1024) {
-    errors.push('Arquivo maior que o limite de 2 MB.');
-  }
-
-  if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
-    errors.push('Tipo de arquivo não permitido. Use JPEG, PNG ou GIF.');
-  }
-
-  if (errors.length > 0) {
-    imageFile.setCustomValidity(errors.join(' '));
-    imageFile.reportValidity();
-    uploadErrors.textContent = errors.join(' ');
-    showToast(errors.join(' '));
-    return;
-  }
-
-  try {
-    const result = await uploadAvatar(file);
-    const src = result.publicUrl;
-    localStorage.setItem('clicksala_avatar', src);
-    avatarHeader.src = src;
-    avatarHeader.style.display = 'inline-block';
-    avatarPreview.src = src;
-    avatarPreview.style.display = 'inline-block';
-    uploadStatus.textContent = 'Avatar enviado com sucesso.';
-    uploadErrors.textContent = '';
-  } catch (error) {
-    showApiErrors(event.currentTarget, error);
-    uploadErrors.textContent = error.message || 'Erro ao enviar avatar.';
-  }
-}
-
 btnLogout.addEventListener('click', async () => {
   await fetch('/auth/logout', {
     method: 'POST',
@@ -183,20 +125,8 @@ btnLogout.addEventListener('click', async () => {
     credentials: 'same-origin',
   }).catch(() => undefined);
   clearAuthState();
-  clearAvatarState();
   updateAuthDisplay();
 });
-
-function clearAvatarState() {
-  localStorage.removeItem('clicksala_avatar');
-  if (avatarHeader) avatarHeader.style.display = 'none';
-  if (avatarPreview) avatarPreview.style.display = 'none';
-}
-
-const formUploadAvatar = document.getElementById('form-upload-avatar');
-if (formUploadAvatar) {
-  formUploadAvatar.addEventListener('submit', handleAvatarSubmit);
-}
 
 showAuthScreenHandlers();
 bindScreenLinks();

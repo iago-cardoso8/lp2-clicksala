@@ -22,9 +22,29 @@ td {
 .schedule-grid {
   display: grid;
   grid-template-columns: 100px repeat(5, 1fr);
+  min-width: 720px;
   border: 1px solid #ccc;
   background: white;
   margin-top: 15px;
+}
+.schedule-grid-scroll {
+  overflow-x: auto;
+}
+.schedule-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+.schedule-toolbar #semana-atual {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-align: center;
+}
+.schedule-toolbar .btn {
+  min-height: 38px;
+  white-space: nowrap;
 }
 .schedule-header {
   background: #f0f0f0;
@@ -60,4 +80,13 @@ td {
   color: var(--primary-color);
   margin-bottom: 20px;
   font-size: 1.6rem;
+}
+@media (max-width: 600px) {
+  .schedule-toolbar {
+    flex-wrap: wrap;
+  }
+  .schedule-toolbar #semana-atual {
+    order: -1;
+    flex-basis: 100%;
+  }
 }

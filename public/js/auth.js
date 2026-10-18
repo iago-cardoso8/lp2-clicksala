@@ -27,32 +27,11 @@ export function createAuthHeaders() {
   return token && token !== 'cookie' ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function uploadAvatar(file) {
-  const formData = new FormData();
-  formData.append('image', file);
-
-  const response = await fetch('/api/users/image', {
-    method: 'POST',
-    headers: createAuthHeaders(),
-    body: formData,
-    credentials: 'same-origin',
-  });
-
-  const payload = await response.json().catch(() => ({ error: 'Erro ao enviar avatar.' }));
-  if (!response.ok) {
-    const error = new Error(payload.error || 'Erro ao enviar avatar.');
-    error.details = payload.details || [];
-    throw error;
-  }
-
-  return payload;
-}
-
-export async function login(email, password) {
+export async function login(email, password, tipo = 'user') {
   const res = await fetch(`${API_BASE}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, tipo }),
     credentials: 'same-origin',
   });
 

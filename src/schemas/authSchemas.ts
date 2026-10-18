@@ -10,4 +10,5 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  tipo: z.enum(['user', 'admin']).default('user'),
 }).strict();

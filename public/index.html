@@ -39,7 +39,6 @@
           <span class="logo-text">CLICKSala</span>
         </div>
         <div class="user-info" style="display: none; align-items: center; gap: 10px;">
-          <img id="avatar-header" src="" alt="Avatar" style="display: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #fff;" />
           <span class="username"></span>
           <button id="btn-logout" class="btn btn-secondary" style="padding: 8px 12px;">Logout</button>
         </div>
@@ -78,6 +77,13 @@
                   required
                 />
               </div>
+              <div class="form-group">
+                <label for="login-tipo">Entrar como:</label>
+                <select id="login-tipo" name="tipo">
+                  <option value="user" selected>Usuário</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
               <div class="auth-actions">
                 <button type="submit" class="btn btn-solicitar">Entrar</button>
                 <button type="button" class="btn btn-secondary" id="btn-show-register">Criar conta</button>
@@ -106,25 +112,6 @@
                 <button type="button" class="btn btn-secondary" id="btn-show-login">Já tenho conta</button>
                 <button type="submit" class="btn btn-solicitar">Cadastrar</button>
               </div>
-            </form>
-          </div>
-        </section>
-
-        <section id="perfil" class="screen">
-          <div class="breadcrumb">Usuário > Perfil</div>
-          <div class="form-box" style="max-width: 520px; margin: 0 auto;">
-            <div class="form-header">Avatar do Usuário</div>
-            <form id="form-upload-avatar">
-              <div class="form-group">
-                <label for="image-file">Escolha uma imagem:</label>
-                <input type="file" id="image-file" name="image" accept="image/jpeg,image/png,image/gif" required />
-              </div>
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <button type="submit" class="btn btn-solicitar">Enviar</button>
-                <img id="avatar-preview" src="" alt="Prévia do avatar" style="display: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd;" />
-              </div>
-              <div id="upload-status" style="margin-top: 12px; color: #333;"></div>
-              <div id="upload-errors" style="margin-top: 12px; color: #b3261e;"></div>
             </form>
           </div>
         </section>
@@ -222,7 +209,14 @@
                 Ir para Formulário <i class="fas fa-arrow-right"></i>
               </button>
             </div>
-            <div class="schedule-grid" id="grade-horarios"></div>
+            <div class="schedule-toolbar">
+              <button type="button" class="btn btn-secondary" id="semana-anterior">Semana anterior</button>
+              <span id="semana-atual" aria-live="polite"></span>
+              <button type="button" class="btn btn-secondary" id="proxima-semana">Próxima semana</button>
+            </div>
+            <div class="schedule-grid-scroll">
+              <div class="schedule-grid" id="grade-horarios"></div>
+            </div>
           </div>
         </section>
 
