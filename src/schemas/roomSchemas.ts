@@ -19,3 +19,7 @@ export const createRoomSchema = z.object({
   tipo: capitalizeInitial(sala.tipo),
   equipamento: sala.equipamento.map((item, index) => index === 0 ? capitalizeInitial(item) : item),
 }));
+
+export const roomIdParamsSchema = z.object({
+  id: z.coerce.number().int().positive('Sala inválida.'),
+}).strict();

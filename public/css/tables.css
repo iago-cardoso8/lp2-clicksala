@@ -19,6 +19,24 @@ td {
   display: flex;
   gap: 10px;
 }
+.room-name-cell {
+  white-space: nowrap;
+}
+.room-delete-button {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border: 0;
+  background: transparent;
+  color: #b3261e;
+  cursor: pointer;
+}
+.room-delete-button:hover,
+.room-delete-button:focus-visible {
+  border-radius: 4px;
+  background: #fde9e7;
+  color: #8f1712;
+}
 .admin-group-row th {
   padding: 6px 15px;
   border-top: 6px solid #fff;

@@ -1,6 +1,6 @@
 
 import { horariosBaseOcupados, blocosHorarios, diasSemana } from './dados.js'
-import { createAuthHeaders } from './auth.js';
+import { createAuthHeaders, getAuthState } from './auth.js';
 
 let listaSalas = [];
 let salaDetalheSelecionada = null;
@@ -96,24 +96,29 @@ export function carregarMinhasSalas() {
 export function carregarTabelaSalas(salas) {
   const tbody = document.querySelector("#tabela-salas tbody");
   const selectSalas = document.getElementById("campo-sala");
+  const selectedRoom = selectSalas.value;
+  const isAdmin = getAuthState().user?.role === 'admin';
   tbody.innerHTML = "";
-
-
-  let existingOptions = Array.from(selectSalas.options).map(
-    (o) => o.value
-  );
-  if (existingOptions.length === 0 || existingOptions[0] !== "") {
-    selectSalas.innerHTML = '<option value="">Selecione...</option>';
+  selectSalas.innerHTML = '<option value="">Selecione...</option>';
+  listaSalas.forEach((sala) => {
+    const option = document.createElement('option');
+    option.value = `${sala.nome} - ${sala.bloco}`;
+    option.textContent = option.value;
+    selectSalas.appendChild(option);
+  });
+  if (listaSalas.some((sala) => `${sala.nome} - ${sala.bloco}` === selectedRoom)) {
+    selectSalas.value = selectedRoom;
   }
-
 
   salas.forEach((sala) => {
     const nomeCompleto = `${sala.nome} - ${sala.bloco}`;
 
-
     const tr = document.createElement("tr");
     tr.innerHTML = `
-             <td>${escapeHtml(sala.nome)}</td>
+             <td class="room-name-cell">
+               ${isAdmin ? `<button class="room-delete-button" data-action="excluir" data-room-id="${escapeHtml(sala.id)}" data-room-name="${escapeHtml(nomeCompleto)}" title="Excluir sala" aria-label="Excluir ${escapeHtml(nomeCompleto)}"><i class="fas fa-trash" aria-hidden="true"></i></button>` : ''}
+               <span>${escapeHtml(sala.nome)}</span>
+             </td>
              <td>${escapeHtml(sala.bloco)}</td>
              <td>${escapeHtml(sala.capacidade)}</td>
              <td>${escapeHtml(sala.equipamento.join(", "))}</td>
@@ -128,12 +133,6 @@ export function carregarTabelaSalas(salas) {
              </td>
          `;
     tbody.appendChild(tr);
-    if (!existingOptions.includes(nomeCompleto)) {
-      const option = document.createElement("option");
-      option.value = nomeCompleto;
-      option.textContent = nomeCompleto;
-      selectSalas.appendChild(option);
-    }
   });
 }
 
@@ -320,6 +319,28 @@ async function decidirSolicitacao(id, cod_sala, data, hora, status) {
   } catch (erro) {
     console.error(erro);
     showToast(erro.message || 'Erro ao atualizar solicitação.');
+  }
+}
+
+async function excluirSala(id, nomeSala) {
+  const confirmacao = window.confirm(
+    `A sala "${nomeSala}" será excluída junto com todas as solicitações associadas a ela. Confirma ciência e deseja excluir?`
+  );
+  if (!confirmacao) return;
+
+  try {
+    const response = await fetch(`/admin/salas/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: createAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(await getApiError(response, 'Erro ao excluir sala.'));
+
+    const salas = await carregarSalas();
+    carregarTabelaSalas(salas);
+    showToast('Sala e solicitações associadas excluídas.', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || 'Erro ao excluir sala.');
   }
 }
 
@@ -644,6 +665,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (acao === "solicitar") {
       solicitarSala(sala);
+    }
+
+    if (acao === 'excluir') {
+      excluirSala(botao.dataset.roomId, botao.dataset.roomName);
     }
   });
   const tabelaMinhas = document.querySelector("#tabela-minhas-salas");

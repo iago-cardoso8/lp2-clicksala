@@ -84,6 +84,20 @@ export async function createRoom(req: Request, res: Response, next: NextFunction
   }
 }
 
+export async function deleteRoom(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    await prisma.sala.delete({ where: { id } });
+    res.status(204).send();
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      next(new HttpError(404, 'Sala não encontrada.'));
+      return;
+    }
+    next(error);
+  }
+}
+
 export async function importRooms(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.file) throw new HttpError(400, 'Envie uma planilha .xlsx ou .csv.', 'arquivo');
@@ -110,4 +124,4 @@ export async function importRooms(req: Request, res: Response, next: NextFunctio
   }
 }
 
-export default { listAll, decide, createRoom, importRooms };
+export default { listAll, decide, createRoom, deleteRoom, importRooms };
