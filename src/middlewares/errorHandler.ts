@@ -19,7 +19,12 @@ export default function errorHandler(err: unknown, req: Request, res: Response, 
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         error: 'Dados inválidos.',
-        details: [{ field: err.field || 'image', message: 'Arquivo excede o limite de 2 MB.' }],
+        details: [{
+          field: err.field || 'arquivo',
+          message: req.originalUrl.startsWith('/admin/salas/importar')
+            ? 'Planilha excede o limite de 5 MB.'
+            : 'Arquivo excede o limite de 2 MB.',
+        }],
       });
     }
 

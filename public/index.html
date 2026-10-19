@@ -28,9 +28,17 @@
         <i class="fas fa-calendar-check"></i>
         <span class="text">Minhas Salas</span>
       </a>
-      <a class="menu-item" id="menu-admin" data-screen="admin" style="display: none;">
-        <i class="fas fa-user-shield"></i> <span class="text">Administração</span>
-      </a>
+      <div id="admin-menu-group" class="admin-menu-group" style="display: none;">
+        <div class="admin-menu-heading">
+          <i class="fas fa-user-shield"></i> <span class="text">Administração</span>
+        </div>
+        <a class="menu-item admin-subitem" id="menu-admin-solicitacoes" data-screen="admin-solicitacoes">
+          <i class="fas fa-clipboard-check"></i> <span class="text">Avaliar solicitações</span>
+        </a>
+        <a class="menu-item admin-subitem" id="menu-admin-salas" data-screen="admin-salas">
+          <i class="fas fa-door-open"></i> <span class="text">Cadastro de salas</span>
+        </a>
+      </div>
     </nav>
     <main class="main-content" id="main-content">
       <header class="top-bar">
@@ -159,8 +167,8 @@
                 </div>
                 <div class="form-group">
                   <label>Horário: *</label
-                  ><select id="campo-hora" required>
-                    <option value="">Selecione a data primeiro...</option>
+                  ><select id="campo-hora" required disabled>
+                    <option value="">Selecione sala e data primeiro...</option>
                   </select>
                 </div>
               </div>
@@ -259,10 +267,59 @@
           </div>
         </section>
 
-        <section id="admin" class="screen">
-          <div class="breadcrumb">Administrador &gt; Solicitações</div>
-          <div style="background: white; padding: 20px; border-radius: 5px; border: 1px solid #ddd">
-            <h3 style="margin-bottom: 20px; color: var(--primary-color)">Solicitações de salas</h3>
+        <section id="admin-solicitacoes" class="screen">
+          <div class="breadcrumb">Administração &gt; Avaliar solicitações</div>
+          <div class="admin-table-section">
+            <h1 class="admin-page-title">Avaliar solicitações</h1>
+            <form id="form-busca-admin" class="admin-search-form">
+              <div class="admin-search-grid">
+                <div class="form-group">
+                  <label for="filtro-status-admin">Status</label>
+                  <select id="filtro-status-admin" name="status">
+                    <option value="">Todos</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="Aprovado">Aprovada</option>
+                    <option value="Rejeitado">Recusada</option>
+                    <option value="Cancelado">Cancelada</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="filtro-data-admin">Data</label>
+                  <input id="filtro-data-admin" name="data" type="date" />
+                </div>
+                <div class="form-group">
+                  <label for="filtro-hora-admin">Horário</label>
+                  <select id="filtro-hora-admin" name="hora">
+                    <option value="">Todos</option>
+                    <option>07:00 - 07:50</option>
+                    <option>07:50 - 08:40</option>
+                    <option>08:40 - 09:30</option>
+                    <option>09:50 - 10:40</option>
+                    <option>10:40 - 11:30</option>
+                    <option>11:30 - 12:20</option>
+                    <option>13:00 - 13:50</option>
+                    <option>13:50 - 14:40</option>
+                    <option>14:40 - 15:30</option>
+                    <option>15:50 - 16:40</option>
+                    <option>16:40 - 17:30</option>
+                    <option>17:30 - 18:20</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="filtro-nome-admin">Nome do usuário</label>
+                  <input id="filtro-nome-admin" name="nome" maxlength="100" />
+                </div>
+              </div>
+              <div class="admin-search-actions">
+                <button type="submit" class="btn btn-solicitar">
+                  <i class="fas fa-search" aria-hidden="true"></i> Buscar
+                </button>
+                <button type="button" class="btn btn-secondary" id="limpar-busca-admin">
+                  <i class="fas fa-rotate-left" aria-hidden="true"></i> Limpar
+                </button>
+              </div>
+            </form>
+            <h2 id="titulo-resultados-admin" class="admin-results-title" hidden>Resultados da busca</h2>
             <table id="tabela-admin">
               <thead>
                 <tr>
@@ -279,6 +336,64 @@
             </table>
             <div id="msg-admin-vazio" style="text-align: center; padding: 20px; color: #777; display: none;">
               Nenhuma solicitação encontrada.
+            </div>
+          </div>
+        </section>
+
+        <section id="admin-salas" class="screen">
+          <div class="breadcrumb">Administração &gt; Cadastro de salas</div>
+          <h1 class="admin-page-title"><span>Cadastro de novas salas</span></h1>
+          <div class="admin-forms-grid">
+            <div class="form-box admin-form-box">
+              <h2 class="form-header">Nova sala</h2>
+              <form id="form-sala-admin">
+                <div class="admin-form-row">
+                  <div class="form-group">
+                    <label for="sala-nome">Nome *</label>
+                    <input id="sala-nome" name="nome" maxlength="40" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="sala-bloco">Bloco *</label>
+                    <input id="sala-bloco" name="bloco" list="opcoes-blocos" maxlength="40" required />
+                    <datalist id="opcoes-blocos"></datalist>
+                  </div>
+                </div>
+                <div class="admin-form-row">
+                  <div class="form-group">
+                    <label for="sala-tipo">Tipo de sala *</label>
+                    <input id="sala-tipo" name="tipo" list="opcoes-tipos-sala" maxlength="40" required />
+                    <datalist id="opcoes-tipos-sala"></datalist>
+                  </div>
+                  <div class="form-group">
+                    <label for="sala-capacidade">Capacidade *</label>
+                    <input id="sala-capacidade" name="capacidade" type="number" min="1" step="1" required />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sala-equipamentos">Equipamentos</label>
+                  <input id="sala-equipamentos" name="equipamento" placeholder="Ex.: projetor, computador" />
+                </div>
+                <button type="submit" class="btn btn-solicitar">Cadastrar sala</button>
+              </form>
+            </div>
+            <div class="form-box admin-form-box">
+              <h2 class="form-header">Importar planilha</h2>
+              <form id="form-importar-salas" enctype="multipart/form-data">
+                <div class="form-group">
+                  <label for="planilha-salas">Planilha (.xlsx ou .csv) *</label>
+                  <input id="planilha-salas" name="arquivo" type="file" accept=".xlsx,.csv" required />
+                </div>
+                <div class="admin-import-actions">
+                  <button type="button" class="btn btn-secondary" id="btn-modelo-salas">
+                    <i class="fas fa-download" aria-hidden="true"></i> Baixar modelo CSV
+                  </button>
+                  <button type="submit" class="btn btn-secondary">Importar salas</button>
+                </div>
+              </form>
+              <div class="spreadsheet-note" role="note">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <p>Atenção, lembre-se que os campos da planilha devem corresponder aos campos presentes no modelo CSV disponibilizado acima. Os equipamentos, caso múltiplos, devem ser informados em um mesmo campo, separados por vírgula. Bom cadastro!</p>
+              </div>
             </div>
           </div>
         </section>

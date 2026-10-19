@@ -47,6 +47,26 @@ body {
   color: white;
   font-weight: bold;
 }
+.admin-menu-heading {
+  padding: 18px 20px 10px;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+.admin-subitem {
+  padding: 12px 20px 12px 38px;
+  font-size: 0.92rem;
+}
+.admin-page-title {
+  margin: 8px 0 28px;
+  color: #32433a;
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+}
+.admin-page-title span {
+  color: var(--primary-color);
+  font-size: 2.35rem;
+}
 .main-content {
   margin-left: var(--sidebar-width);
   width: 100%;

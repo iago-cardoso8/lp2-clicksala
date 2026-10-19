@@ -19,6 +19,43 @@ td {
   display: flex;
   gap: 10px;
 }
+.admin-group-row th {
+  padding: 6px 15px;
+  border-top: 6px solid #fff;
+  border-left: 4px solid currentColor;
+  background: #edf3ee;
+  background-clip: padding-box;
+  color: #355b3a;
+  font-size: 0.95rem;
+}
+.admin-group-row:first-child th {
+  border-top-width: 0;
+}
+.admin-group-pendente th {
+  background-color: #fff1c2;
+  color: #76570b;
+}
+.admin-group-aprovado th {
+  background-color: #e7f1e8;
+  color: #355b3a;
+}
+.admin-group-rejeitado th {
+  background-color: #fbe2e2;
+  color: #8c3030;
+}
+.admin-group-count {
+  float: right;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.admin-past-row {
+  color: #89918c;
+  background: #f7f8f7;
+}
+.admin-past-row td {
+  border-bottom-color: #e8ebe8;
+}
 .schedule-grid {
   display: grid;
   grid-template-columns: 100px repeat(5, 1fr);

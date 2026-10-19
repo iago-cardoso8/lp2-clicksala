@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import solicitacoesModel from '../models/solicitacoesModel.js';
 import HttpError from '../errors/HttpError.js';
+import authModel from '../models/authModel.js';
+import { sendRequestReceivedEmail } from '../services/emailService.js';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -30,7 +32,8 @@ export async function getSalas(req: Request, res: Response, next: NextFunction) 
 export async function getOcupados(req: Request, res: Response, next: NextFunction) {
   try {
     const { cod_sala } = req.query as unknown as { cod_sala: number };
-    res.json(await solicitacoesModel.readApprovedForRoom(cod_sala));
+    const data = typeof req.query.data === 'string' ? req.query.data : undefined;
+    res.json(await solicitacoesModel.readApprovedForRoom(cod_sala, data));
   } catch (error) {
     next(error);
   }
@@ -99,6 +102,9 @@ export async function create(req: Request, res: Response, next: NextFunction) {
       finalidade,
       id_user: userId,
     });
+    void authModel.findById(userId)
+      .then((usuario) => usuario && sendRequestReceivedEmail(usuario.email, usuario.nome))
+      .catch((error) => console.error('Falha ao enviar e-mail de recebimento da solicitação:', error));
     return res.status(201).json(novaSolicitacao);
   } catch (erro) {
     next(erro);
@@ -116,8 +122,8 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 
     const solicitacaoAtualizada = await solicitacoesModel.update({
       cod_sala: Number(req.params.cod_sala),
-      data: req.params.data,
-      hora: req.params.hora,
+      data: String(req.params.data),
+      hora: String(req.params.hora),
       status,
       id_user: userId,
     });
@@ -136,8 +142,8 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     const cod_sala = Number(req.params.cod_sala ?? req.body.cod_sala);
-    const data = req.params.data ?? req.body.data;
-    const hora = req.params.hora ?? req.body.hora;
+    const data = req.params.data === undefined ? req.body.data : String(req.params.data);
+    const hora = req.params.hora === undefined ? req.body.hora : String(req.params.hora);
 
     const userId = Number((req as any).userId);
 

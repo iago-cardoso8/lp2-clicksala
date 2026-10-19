@@ -6,6 +6,7 @@ let listaSalas = [];
 let salaDetalheSelecionada = null;
 let deslocamentoSemana = 0;
 let solicitacoesAprovadasSala = [];
+let disponibilidadeRequestId = 0;
 const BASE_URL = '/solicitacoes';
 
 export function showToast(message, type = 'error') {
@@ -44,12 +45,32 @@ export async function carregarSalas() {
     }
 
     listaSalas = await res.json();
+    atualizarOpcoesSalasAdmin();
     return listaSalas;
   } catch (error) {
     console.error(error);
     showToast(error.message || 'Erro ao buscar salas.');
     return [];
   }
+}
+
+function atualizarOpcoesSalasAdmin() {
+  const opcoesBlocos = document.getElementById('opcoes-blocos');
+  const opcoesTipos = document.getElementById('opcoes-tipos-sala');
+  if (!opcoesBlocos || !opcoesTipos) return;
+
+  const blocos = [...new Set(listaSalas.map((sala) => sala.bloco.trim()).filter(Boolean))].sort();
+  const tipos = [...new Set(listaSalas.map((sala) => sala.tipo.trim()).filter(Boolean))].sort();
+  opcoesBlocos.replaceChildren(...blocos.map((bloco) => {
+    const option = document.createElement('option');
+    option.value = bloco;
+    return option;
+  }));
+  opcoesTipos.replaceChildren(...tipos.map((tipo) => {
+    const option = document.createElement('option');
+    option.value = tipo;
+    return option;
+  }));
 }
 
 async function carregarSolicitacoes() {
@@ -134,14 +155,20 @@ export function showScreen(screenId) {
   } else if (screenId === "solicitar") {
     setMinDateOnForm();
     document.getElementById("menu-solicitar").classList.add("active");
-  } else if (screenId === "admin") {
-    document.getElementById("menu-admin").classList.add("active");
+  } else if (screenId === "admin-solicitacoes") {
+    document.getElementById("menu-admin-solicitacoes").classList.add("active");
     carregarAdmin();
+  } else if (screenId === "admin-salas") {
+    document.getElementById("menu-admin-salas").classList.add("active");
+    carregarSalas();
   }
 }
 
 export async function carregarAdmin() {
   try {
+    document.getElementById('titulo-resultados-admin').hidden = true;
+    const salas = await carregarSalas();
+    carregarTabelaSalas(salas);
     const res = await fetch('/admin/solicitacoes', { headers: createAuthHeaders() });
     if (!res.ok) {
       throw new Error(await getApiError(res, 'Erro ao buscar solicitações.'));
@@ -156,39 +183,122 @@ export async function carregarAdmin() {
   }
 }
 
-function renderTabelaAdmin(lista) {
+function dataDaSolicitacao(item) {
+  const [dia, mes, ano] = item.data.split('/').map(Number);
+  return new Date(ano, mes - 1, dia);
+}
+
+function horarioJaPassou(item, agora = new Date()) {
+  const data = dataDaSolicitacao(item);
+  const horaFinal = item.hora.split(' - ')[1];
+  const [hora, minuto] = horaFinal.split(':').map(Number);
+  data.setHours(hora, minuto, 0, 0);
+  return data <= agora;
+}
+
+function ordenarDataDesc(lista) {
+  return [...lista].sort((a, b) =>
+    dataDaSolicitacao(b).getTime() - dataDaSolicitacao(a).getTime() || b.hora.localeCompare(a.hora)
+  );
+}
+
+function ordenarPendentes(lista, passado) {
+  return lista
+    .filter((item) => horarioJaPassou(item) === passado)
+    .sort((a, b) => a.id - b.id);
+}
+
+function criarLinhaAdmin(item, passada = false) {
+  const sala = listaSalas.find((s) => s.id === item.cod_sala);
+  const nomeSala = sala ? `${sala.nome} - ${sala.bloco}` : `Sala ${item.cod_sala}`;
+  const statusClass = {
+    Pendente: 'status-pendente',
+    Aprovado: 'status-aprovado',
+    Rejeitado: 'status-rejeitado',
+  }[item.status] || 'status-cancelado';
+  const dados = `data-id="${escapeHtml(item.id)}" data-cod-sala="${escapeHtml(item.cod_sala)}" data-data="${escapeHtml(item.data)}" data-hora="${escapeHtml(item.hora)}"`;
+  const acoes = item.status === 'Pendente'
+    ? `<button class="btn btn-solicitar" data-decisao="Aprovado" ${dados}>Aprovar</button>
+       <button class="btn btn-danger" data-decisao="Rejeitado" ${dados}>Rejeitar</button>`
+    : '---';
+
+  const tr = document.createElement('tr');
+  if (passada) tr.classList.add('admin-past-row');
+  tr.innerHTML = `
+    <td>${escapeHtml(item.usuario?.nome ?? '')}</td>
+    <td>${escapeHtml(nomeSala)}</td>
+    <td>${escapeHtml(item.data)}</td>
+    <td>${escapeHtml(item.hora)}</td>
+    <td>${escapeHtml(item.finalidade)}</td>
+    <td><span class="status-badge ${statusClass}">${escapeHtml(item.status)}</span></td>
+    <td class="actions-cell">${acoes}</td>
+  `;
+  return tr;
+}
+
+function renderTabelaAdmin(lista, resultadoBusca = false) {
   const tbody = document.querySelector('#tabela-admin tbody');
   const msg = document.getElementById('msg-admin-vazio');
   tbody.innerHTML = '';
-  msg.style.display = lista.length ? 'none' : 'block';
 
-  lista.forEach((item) => {
-    const sala = listaSalas.find((s) => s.id === item.cod_sala);
-    const nomeSala = sala ? `${sala.nome} - ${sala.bloco}` : `Sala ${item.cod_sala}`;
-    const statusClass = {
-      Pendente: 'status-pendente',
-      Aprovado: 'status-aprovado',
-      Rejeitado: 'status-rejeitado',
-    }[item.status] || 'status-cancelado';
+  if (resultadoBusca) {
+    msg.style.display = lista.length ? 'none' : 'block';
+    msg.textContent = 'Nenhuma solicitação encontrada para esses filtros.';
+    ordenarDataDesc(lista).forEach((item) => tbody.appendChild(criarLinhaAdmin(item, horarioJaPassou(item))));
+    return;
+  }
 
-    const dados = `data-id="${escapeHtml(item.id)}" data-cod-sala="${escapeHtml(item.cod_sala)}" data-data="${escapeHtml(item.data)}" data-hora="${escapeHtml(item.hora)}"`;
-    const acoes = item.status === 'Pendente'
-      ? `<button class="btn btn-solicitar" data-decisao="Aprovado" ${dados}>Aprovar</button>
-         <button class="btn btn-danger" data-decisao="Rejeitado" ${dados}>Rejeitar</button>`
-      : '---';
+  const grupos = [
+    { status: 'Pendente', titulo: 'Pendentes', itens: lista.filter((item) => item.status === 'Pendente') },
+    { status: 'Aprovado', titulo: 'Aprovadas', itens: lista.filter((item) => item.status === 'Aprovado') },
+    { status: 'Rejeitado', titulo: 'Recusadas', itens: lista.filter((item) => item.status === 'Rejeitado') },
+  ];
+  msg.style.display = grupos.some((grupo) => grupo.itens.length) ? 'none' : 'block';
+  msg.textContent = 'Nenhuma solicitação encontrada.';
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(item.usuario?.nome ?? '')}</td>
-      <td>${escapeHtml(nomeSala)}</td>
-      <td>${escapeHtml(item.data)}</td>
-      <td>${escapeHtml(item.hora)}</td>
-      <td>${escapeHtml(item.finalidade)}</td>
-      <td><span class="status-badge ${statusClass}">${escapeHtml(item.status)}</span></td>
-      <td class="actions-cell">${acoes}</td>
-    `;
-    tbody.appendChild(tr);
+  grupos.forEach(({ status, titulo, itens }) => {
+    const groupRow = document.createElement('tr');
+    groupRow.className = `admin-group-row admin-group-${status.toLocaleLowerCase('pt-BR')}`;
+    groupRow.innerHTML = `<th colspan="7" scope="colgroup">${titulo}<span class="admin-group-count">${itens.length}</span></th>`;
+    tbody.appendChild(groupRow);
+
+    const ordenados = status === 'Pendente'
+      ? [...ordenarPendentes(itens, false), ...ordenarPendentes(itens, true)]
+      : [...ordenarDataDesc(itens.filter((item) => !horarioJaPassou(item))), ...ordenarDataDesc(itens.filter((item) => horarioJaPassou(item)))];
+    ordenados.forEach((item) => tbody.appendChild(criarLinhaAdmin(item, horarioJaPassou(item))));
   });
+}
+
+async function buscarAdmin(event) {
+  event.preventDefault();
+  const params = new URLSearchParams();
+  const filtros = {
+    status: document.getElementById('filtro-status-admin').value,
+    data: document.getElementById('filtro-data-admin').value,
+    hora: document.getElementById('filtro-hora-admin').value,
+    nome: document.getElementById('filtro-nome-admin').value.trim(),
+  };
+  Object.entries(filtros).forEach(([chave, valor]) => {
+    if (valor) params.set(chave, valor);
+  });
+
+  const titulo = document.getElementById('titulo-resultados-admin');
+  titulo.hidden = false;
+  renderTabelaAdmin([], true);
+  try {
+    const query = params.size ? `?${params}` : '';
+    const response = await fetch(`/admin/solicitacoes${query}`, { headers: createAuthHeaders() });
+    if (!response.ok) throw new Error(await getApiError(response, 'Erro ao buscar solicitações.'));
+    renderTabelaAdmin(await response.json(), true);
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || 'Erro ao buscar solicitações.');
+  }
+}
+
+function limparBuscaAdmin() {
+  document.getElementById('form-busca-admin').reset();
+  carregarAdmin();
 }
 
 async function decidirSolicitacao(id, cod_sala, data, hora, status) {
@@ -338,6 +448,7 @@ function contarCaracteres() {
 function limparFormulario() {
   document.getElementById("form-solicitacao").reset();
   contarCaracteres();
+  preencherHorarios();
 }
 
 
@@ -432,72 +543,63 @@ function diaDaSemana(dataISO) {
 
 
 async function preencherHorarios() {
-    const selectHora = document.getElementById("campo-hora");
-    const campoData = document.getElementById("campo-data");
-    const dataISO = campoData.value;
+  const selectHora = document.getElementById("campo-hora");
+  const campoData = document.getElementById("campo-data");
+  const dataISO = campoData.value;
+  const salaSelecionada = listaSalas.find((sala) => `${sala.nome} - ${sala.bloco}` === document.getElementById('campo-sala').value);
+  const requestId = ++disponibilidadeRequestId;
 
-    if (dataISO) {
-      const diaSemana = diaDaSemana(dataISO);
-        
-        if (diaSemana === "DOMINGO") {
-            alert("Não é permitido agendar aos domingos.");
-            campoData.value = "";
-            selectHora.innerHTML = '<option value="">Selecione a data primeiro...</option>';
-            return;
-        }
-    }
+  selectHora.disabled = true;
+  selectHora.innerHTML = '<option value="">Selecione sala e data primeiro...</option>';
+  if (!dataISO || !salaSelecionada) return;
 
-    selectHora.innerHTML = '<option value="">Selecione...</option>';
+  if (diaDaSemana(dataISO) === "DOMINGO") {
+    alert("Não é permitido agendar aos domingos.");
+    campoData.value = "";
+    selectHora.innerHTML = '<option value="">Selecione sala e data primeiro...</option>';
+    return;
+  }
 
-    if (!dataISO) {
-        blocosHorarios.forEach((hora) => {
-            const option = document.createElement("option");
-            option.value = hora;
-            option.textContent = hora;
-            selectHora.appendChild(option);
-        });
-        return;
-    }
+  const hoje = new Date();
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  const dataSelecionada = new Date(ano, mes - 1, dia);
+  const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const dataSelecSemHora = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate());
 
-    const hoje = new Date();
-    const [ano, mes, dia] = dataISO.split("-").map(Number);
-    const dataSelecionada = new Date(ano, mes - 1, dia);
-    const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    const dataSelecSemHora = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate());
+  let horariosAprovados = [];
+  try {
+    const params = new URLSearchParams({ cod_sala: salaSelecionada.id, data: formatarData(dataISO) });
+    const response = await fetch(`${BASE_URL}/ocupados?${params}`, { headers: createAuthHeaders() });
+    if (!response.ok) throw new Error(await getApiError(response, 'Erro ao buscar horários disponíveis.'));
+    horariosAprovados = await response.json();
+  } catch (error) {
+    console.error('Erro ao buscar horários ocupados:', error);
+    showToast(error.message || 'Erro ao buscar horários disponíveis.');
+    return;
+  }
 
-    const salaSelecionada = listaSalas.find((sala) => `${sala.nome} - ${sala.bloco}` === document.getElementById('campo-sala').value);
-    let horariosAprovados = [];
-    if (salaSelecionada) {
-      try {
-        const response = await fetch(`${BASE_URL}/ocupados?cod_sala=${encodeURIComponent(salaSelecionada.id)}`, {
-          headers: createAuthHeaders(),
-        });
-        if (response.ok) horariosAprovados = await response.json();
-      } catch (error) {
-        console.error('Erro ao buscar horários aprovados:', error);
-      }
-    }
+  if (requestId !== disponibilidadeRequestId) return;
+  selectHora.innerHTML = '<option value="">Selecione...</option>';
+  let availableCount = 0;
 
-    blocosHorarios.forEach((hora) => {
-        const horaFinal = hora.split(" - ")[1];
-        const [horaH, minH] = horaFinal.split(":").map(Number);
-        const dataHoraFinal = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate(), horaH, minH);
+  blocosHorarios.forEach((hora) => {
+    const horaFinal = hora.split(" - ")[1];
+    const [horaH, minH] = horaFinal.split(":").map(Number);
+    const dataHoraFinal = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate(), horaH, minH);
 
-        if (dataSelecSemHora.getTime() === hojeSemHora.getTime() && dataHoraFinal <= hoje) {
-            return;
-        }
+    if (dataSelecSemHora.getTime() === hojeSemHora.getTime() && dataHoraFinal <= hoje) return;
+    if (horariosAprovados.some((solicitacao) => solicitacao.hora === hora)) return;
 
-        if (horariosAprovados.some((solicitacao) =>
-          solicitacao.data === formatarData(dataISO) && solicitacao.hora === hora
-        )) {
-          return;
-        }
+    const option = document.createElement("option");
+    option.value = hora;
+    option.textContent = hora;
+    selectHora.appendChild(option);
+    availableCount += 1;
+  });
 
-        const option = document.createElement("option");
-        option.value = hora;
-        option.textContent = hora;
-        selectHora.appendChild(option);
-    });
+  if (requestId !== disponibilidadeRequestId) return;
+  selectHora.disabled = false;
+  if (!availableCount) selectHora.innerHTML = '<option value="">Nenhum horário disponível</option>';
 }
 
 
@@ -563,6 +665,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btn) return;
     decidirSolicitacao(btn.dataset.id, btn.dataset.codSala, btn.dataset.data, btn.dataset.hora, btn.dataset.decisao);
   });
+  document.getElementById('form-busca-admin').addEventListener('submit', buscarAdmin);
+  document.getElementById('limpar-busca-admin').addEventListener('click', limparBuscaAdmin);
 });
 
 
@@ -667,3 +771,60 @@ document.getElementById("form-solicitacao")
       showToast(erro.message || "Erro ao salvar solicitação.");
     }
   });
+
+document.getElementById('form-sala-admin').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    nome: document.getElementById('sala-nome').value.trim(),
+    bloco: document.getElementById('sala-bloco').value.trim(),
+    tipo: document.getElementById('sala-tipo').value.trim(),
+    capacidade: Number(document.getElementById('sala-capacidade').value),
+    equipamento: document.getElementById('sala-equipamentos').value.split(/[,;|]/).map((item) => item.trim()).filter(Boolean),
+  };
+
+  try {
+    const response = await fetch('/admin/salas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...createAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(await getApiError(response, 'Erro ao cadastrar sala.'));
+    form.reset();
+    await carregarSalas().then(carregarTabelaSalas);
+    showToast('Sala cadastrada com sucesso.', 'success');
+  } catch (error) {
+    showToast(error.message || 'Erro ao cadastrar sala.');
+  }
+});
+
+document.getElementById('form-importar-salas').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+
+  try {
+    const response = await fetch('/admin/salas/importar', {
+      method: 'POST',
+      headers: createAuthHeaders(),
+      body: formData,
+    });
+    if (!response.ok) throw new Error(await getApiError(response, 'Erro ao importar salas.'));
+    const result = await response.json();
+    form.reset();
+    await carregarSalas().then(carregarTabelaSalas);
+    showToast(result.message, 'success');
+  } catch (error) {
+    showToast(error.message || 'Erro ao importar salas.');
+  }
+});
+
+document.getElementById('btn-modelo-salas').addEventListener('click', () => {
+  const csv = 'nome,bloco,tipo,capacidade,equipamento\nSala exemplo,Bloco 1,Laboratório,30,"Projetor, Computador"\n';
+  const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'modelo-salas.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+});

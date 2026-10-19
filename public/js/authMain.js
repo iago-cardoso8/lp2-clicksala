@@ -26,7 +26,7 @@ function updateAuthDisplay() {
   const loggedIn = Boolean(token && user);
 
   sidebar.style.display = loggedIn ? 'block' : 'none';
-  document.getElementById('menu-admin').style.display = user?.role === 'admin' ? 'block' : 'none';
+  document.getElementById('admin-menu-group').style.display = user?.role === 'admin' ? 'block' : 'none';
   topBarUser.style.display = loggedIn ? 'flex' : 'none';
   usernameLabel.textContent = user?.nome ?? '';
 

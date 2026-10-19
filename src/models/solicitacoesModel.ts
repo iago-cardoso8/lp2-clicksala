@@ -2,7 +2,7 @@ import { prisma } from '../database/prismaClient.js';
 import type { Prisma } from '@prisma/client';
 import type { Sala, Solicitacao, CreateSolicitacaoDTO, UpdateSolicitacaoDTO } from '../types/entities.js';
 import HttpError from '../errors/HttpError.js';
-import { isHorarioFixo } from '../config/horarios.js';
+import { BLOCOS_HORARIOS, isHorarioFixo } from '../config/horarios.js';
 
 type PrismaSala = Prisma.SalaGetPayload<{
   select: {
@@ -60,11 +60,19 @@ export async function getSalas(): Promise<Sala[]> {
   }));
 }
 
-export async function readApprovedForRoom(cod_sala: number) {
-  return prisma.solicitacao.findMany({
-    where: { cod_sala, status: 'Aprovado' },
+export async function readApprovedForRoom(cod_sala: number, data?: string) {
+  const approved = await prisma.solicitacao.findMany({
+    where: { cod_sala, status: 'Aprovado', ...(data ? { data } : {}) },
     select: { cod_sala: true, data: true, hora: true },
   });
+
+  if (!data) return approved;
+
+  const fixed = BLOCOS_HORARIOS
+    .filter((hora) => isHorarioFixo(cod_sala, data, hora))
+    .map((hora) => ({ cod_sala, data, hora }));
+
+  return [...approved, ...fixed];
 }
 
 export async function hasApproved(cod_sala: number, data: string, hora: string) {
@@ -223,16 +231,22 @@ export async function remove(cod_sala: number | string, data: string, hora: stri
   return true;
 }
 
-export async function readAll(status?: string) {
+export async function readAll(filters: { status?: string; data?: string; hora?: string; nome?: string } = {}) {
   const result = await prisma.solicitacao.findMany({
-    where: status ? { status } : {},
+    where: {
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.data ? { data: filters.data } : {}),
+      ...(filters.hora ? { hora: filters.hora } : {}),
+    },
     include: { usuario: { select: { nome: true, email: true } } },
   });
 
-  const toKey = (d: string) => d.split('/').reverse().join('-');
-  result.sort((a, b) => toKey(a.data).localeCompare(toKey(b.data)) || a.hora.localeCompare(b.hora));
+  const normalizedName = filters.nome?.toLocaleLowerCase('pt-BR');
+  const filtered = normalizedName
+    ? result.filter(({ usuario }) => usuario.nome.toLocaleLowerCase('pt-BR').includes(normalizedName))
+    : result;
 
-  return result.map(({ usuario, ...rest }) => ({ ...normalizeSolicitacao(rest), usuario }));
+  return filtered.map(({ usuario, ...rest }) => ({ ...normalizeSolicitacao(rest), usuario }));
 }
 
 export async function updateStatusAdmin(cod_sala: number | string, data: string, hora: string, id: number, status: string) {
@@ -265,6 +279,17 @@ export async function updateStatusAdmin(cod_sala: number | string, data: string,
         throw new HttpError(409, 'Este horário já foi aprovado.');
       }
 
+      const conflictingPending = await transaction.solicitacao.findMany({
+        where: {
+          cod_sala: Number(cod_sala),
+          data,
+          hora,
+          status: 'Pendente',
+          id: { not: id },
+        },
+        include: { usuario: { select: { nome: true, email: true } }, sala: { select: { nome: true, bloco: true } } },
+      });
+
       await transaction.solicitacao.updateMany({
         where: {
           cod_sala: Number(cod_sala),
@@ -275,14 +300,29 @@ export async function updateStatusAdmin(cod_sala: number | string, data: string,
         },
         data: { status: 'Rejeitado' },
       });
+
+      const updated = await transaction.solicitacao.update({
+        where: { id },
+        data: { status },
+        include: { usuario: { select: { nome: true, email: true } }, sala: { select: { nome: true, bloco: true } } },
+      });
+
+      return {
+        solicitacao: { ...normalizeSolicitacao(updated), usuario: updated.usuario, sala: updated.sala },
+        recusadas: conflictingPending,
+      };
     }
 
     const updated = await transaction.solicitacao.update({
       where: { id },
       data: { status },
+      include: { usuario: { select: { nome: true, email: true } }, sala: { select: { nome: true, bloco: true } } },
     });
 
-    return normalizeSolicitacao(updated);
+    return {
+      solicitacao: { ...normalizeSolicitacao(updated), usuario: updated.usuario, sala: updated.sala },
+      recusadas: [],
+    };
   });
 }
 

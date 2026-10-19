@@ -31,6 +31,11 @@ async function up() {
     )
   `);
 
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS sala_nome_bloco_unique_idx
+    ON sala (LOWER(TRIM(nome)), LOWER(TRIM(bloco)))
+  `);
+
   const solicitacaoColumns = await prisma.$queryRawUnsafe<Array<{ name: string }>>('PRAGMA table_info(solicitacao)');
   const createSolicitacaoTable = `
     CREATE TABLE solicitacao (

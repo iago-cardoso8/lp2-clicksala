@@ -56,6 +56,7 @@ export const listSolicitacoesSchema = z.object({
 
 export const ocupadosQuerySchema = z.object({
   cod_sala: roomIdSchema,
+  data: dateSchema.optional(),
 }).strict();
 
 export const solicitacaoParamsSchema = z.object({
@@ -131,7 +132,10 @@ export const deleteSolicitacaoBodySchema = z.object({
 
 export const adminListSchema = z.object({
   status: z.enum(['Pendente', 'Aprovado', 'Rejeitado', 'Cancelado']).optional(),
-});
+  data: dateSchema.optional(),
+  hora: z.enum(BLOCOS_HORARIOS).optional(),
+  nome: z.string().trim().max(100, 'Nome não pode ter mais de 100 caracteres.').optional(),
+}).strict();
 
 export const adminDecisionSchema = z.object({
   id: z.coerce.number().int().positive('Solicitação inválida.'),
